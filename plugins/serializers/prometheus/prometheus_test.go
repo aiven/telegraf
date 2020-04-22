@@ -424,9 +424,9 @@ cpu_time_idle 43
 				),
 			},
 			expected: []byte(`
-# HELP cpu::xyzzy_time_idle Telegraf collected metric
-# TYPE cpu::xyzzy_time_idle untyped
-cpu::xyzzy_time_idle 42
+# HELP cpu__xyzzy_time_idle Telegraf collected metric
+# TYPE cpu__xyzzy_time_idle untyped
+cpu__xyzzy_time_idle 42
 `),
 		},
 		{
@@ -442,9 +442,9 @@ cpu::xyzzy_time_idle 42
 				),
 			},
 			expected: []byte(`
-# HELP cpu_time:idle Telegraf collected metric
-# TYPE cpu_time:idle untyped
-cpu_time:idle 42
+# HELP cpu_time_idle Telegraf collected metric
+# TYPE cpu_time_idle untyped
+cpu_time_idle 42
 `),
 		},
 		{
