@@ -13,6 +13,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/Shopify/sarama"
+	"golang.org/x/net/proxy"
 )
 
 var ValidTopicSuffixMethods = []string{
@@ -33,6 +34,11 @@ type (
 		RequiredAcks     int
 		MaxRetry         int
 		MaxMessageBytes  int `toml:"max_message_bytes"`
+
+		Socks5ProxyEnabled bool 	`toml:"socks5_enabled"`
+		Socks5ProxyAddress string 	`toml:"socks5_address"`
+		Socks5ProxyUsername string 	`toml:"socks5_username"`
+		Socks5ProxyPassword string 	`toml:"socks5_password"`
 
 		Version string `toml:"version"`
 
@@ -108,6 +114,12 @@ var sampleConfig = `
   ## Telegraf tag to use as a routing key
   ##  ie, if this tag exists, its value will be used as the routing key
   routing_tag = "host"
+
+  ## SOCKS5 proxy to use when connecting to brokers
+  socks5_enabled = false
+  socks5_address = "127.0.0.1:1080"
+  socks5_username = "alice"
+  socks5_password = "pass123"
 
   ## Static routing key.  Used when no routing_tag is set or as a fallback
   ## when the tag specified in routing tag is not found.  If set to "random",
@@ -245,6 +257,23 @@ func (k *Kafka) Connect() error {
 	if tlsConfig != nil {
 		config.Net.TLS.Config = tlsConfig
 		config.Net.TLS.Enable = true
+	}
+
+	if k.Socks5ProxyEnabled {
+		config.Net.Proxy.Enable = true
+
+		var auth *proxy.Auth
+		if k.Socks5ProxyUsername != "" {
+			auth = new(proxy.Auth)
+			auth.User = k.Socks5ProxyUsername
+			auth.Password = k.Socks5ProxyPassword
+		}
+		dialer, err := proxy.SOCKS5("tcp", k.Socks5ProxyAddress, auth, proxy.Direct)
+		if err != nil {
+			log.Fatalf("Error while connecting to proxy server: %s", err)
+			return err
+		}
+		config.Net.Proxy.Dialer = dialer
 	}
 
 	if k.SASLUsername != "" && k.SASLPassword != "" {

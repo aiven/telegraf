@@ -152,7 +152,7 @@
 
 [[constraint]]
   name = "github.com/Shopify/sarama"
-  version = "1.18.0"
+  version = "1.22.0"
 
 [[constraint]]
   name = "github.com/soniah/gosnmp"
@@ -230,7 +230,7 @@
   name = "github.com/vmware/govmomi"
   version = "0.18.0"
 
- [[constraint]] 
+[[constraint]]
   name = "github.com/Azure/go-autorest"
   version = "10.12.0"
 
