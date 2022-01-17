@@ -39,9 +39,9 @@ require (
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1004
 	github.com/amir/raidman v0.0.0-20170415203553-1ccc43bfb9c9
-	github.com/antchfx/jsonquery v1.1.4
+	github.com/antchfx/jsonquery v1.1.5
 	github.com/antchfx/xmlquery v1.3.6
-	github.com/antchfx/xpath v1.1.11
+	github.com/antchfx/xpath v1.2.0
 	github.com/apache/arrow/go/arrow v0.0.0-20211006091945-a69884db78f4 // indirect
 	github.com/apache/thrift v0.15.0
 	github.com/aristanetworks/glog v0.0.0-20191112221043-67e8567f59f3 // indirect
