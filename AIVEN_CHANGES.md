@@ -34,3 +34,17 @@
     timescaledb as it seems )
   * predates the upstream postgresql plugin and was subsequently moved to the
     aiven prefix
+
+## Serializers
+
+### Prometheus and Prometheus Remote Write
+
+* 2022-01-21
+  * colons in metric and label names are always replaced with underscores,
+    regardless of `prometheus_name_sanitization` mode ( legacy or utf8 );
+    this is now our api and we have to keep it. Upstream strips colons only
+    from label names in legacy mode, so the patch covers metric names in
+    legacy mode and both name types in utf8 mode ( see
+    `plugins/serializers/prometheus/convert.go` )
+  * the `prometheus_client` output uses the same sanitization, so it is
+    covered as well
