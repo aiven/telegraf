@@ -11,7 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/wait"
 
+	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/config"
+	"github.com/influxdata/telegraf/metric"
 	"github.com/influxdata/telegraf/plugins/common/tls"
 	"github.com/influxdata/telegraf/testutil"
 )
@@ -545,6 +547,74 @@ func TestGatherGlobalVariables(t *testing.T) {
 			for _, field := range testCase.fields {
 				require.Truef(t, foundFields[field.key], "missing field %s=%v (test case %q)", field.key, field.parsedValue, testCase.name)
 			}
+		})
+	}
+}
+
+func TestGatherPerfTableIOWaits(t *testing.T) {
+	tests := []struct {
+		name      string
+		aggregate bool
+		query     string
+		objName   string
+	}{
+		{
+			name:    "per table",
+			query:   perfTableIOWaitsQuery,
+			objName: "table1",
+		},
+		{
+			name:      "aggregated per schema",
+			aggregate: true,
+			query:     perfTableIOWaitsAggregateQuery,
+			objName:   "db1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			rows := sqlmock.NewRows([]string{
+				"OBJECT_SCHEMA", "OBJECT_NAME",
+				"COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "COUNT_DELETE",
+				"SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE", "SUM_TIMER_DELETE",
+			}).AddRow(
+				"db1", tt.objName,
+				int64(10), int64(20), int64(30), int64(40),
+				int64(1e12), int64(2e12), int64(3e12), int64(4e12),
+			)
+			mock.ExpectQuery(tt.query).WillReturnRows(rows).RowsWillBeClosed()
+
+			m := Mysql{AggregateTableIOWaits: tt.aggregate}
+			var acc testutil.Accumulator
+			require.NoError(t, m.gatherPerfTableIOWaits(db, "127.0.0.1:3306", &acc))
+			require.NoError(t, mock.ExpectationsWereMet())
+
+			expected := []telegraf.Metric{
+				metric.New(
+					"mysql_perf_schema",
+					map[string]string{
+						"server": "127.0.0.1:3306",
+						"schema": "db1",
+						"name":   tt.objName,
+					},
+					map[string]interface{}{
+						"table_io_waits_total_fetch":          float64(10),
+						"table_io_waits_total_insert":         float64(20),
+						"table_io_waits_total_update":         float64(30),
+						"table_io_waits_total_delete":         float64(40),
+						"table_io_waits_seconds_total_fetch":  float64(1),
+						"table_io_waits_seconds_total_insert": float64(2),
+						"table_io_waits_seconds_total_update": float64(3),
+						"table_io_waits_seconds_total_delete": float64(4),
+					},
+					time.Unix(0, 0),
+				),
+			}
+			testutil.RequireMetricsEqual(t, expected, acc.GetTelegrafMetrics(), testutil.IgnoreTime())
 		})
 	}
 }

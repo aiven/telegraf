@@ -18,3 +18,8 @@
 * 2022-01-21
   * add cross cluster replication metrics ( they dont work for elasticsearch but
     its a first step until we have an opensearch plugin )
+
+### MySQL
+
+* 2022-01-21
+  * added aggregated IOPerf Stats ( probably upstreamable )
