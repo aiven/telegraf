@@ -487,7 +487,7 @@ cpu_time_idle 43
 `),
 		},
 		{
-			name: "colons are not replaced in metric name from measurement",
+			name: "colons are replaced in metric name from measurement",
 			metrics: []telegraf.Metric{
 				metric.New(
 					"cpu::xyzzy",
@@ -499,13 +499,13 @@ cpu_time_idle 43
 				),
 			},
 			expected: []byte(`
-# HELP cpu::xyzzy_time_idle Telegraf collected metric
-# TYPE cpu::xyzzy_time_idle untyped
-cpu::xyzzy_time_idle 42
+# HELP cpu__xyzzy_time_idle Telegraf collected metric
+# TYPE cpu__xyzzy_time_idle untyped
+cpu__xyzzy_time_idle 42
 `),
 		},
 		{
-			name: "colons are not replaced in metric name from field",
+			name: "colons are replaced in metric name from field",
 			metrics: []telegraf.Metric{
 				metric.New(
 					"cpu",
@@ -517,21 +517,21 @@ cpu::xyzzy_time_idle 42
 				),
 			},
 			expected: []byte(`
-# HELP cpu_time:idle Telegraf collected metric
-# TYPE cpu_time:idle untyped
-cpu_time:idle 42
+# HELP cpu_time_idle Telegraf collected metric
+# TYPE cpu_time_idle untyped
+cpu_time_idle 42
 `),
 		},
 		{
 			name: "invalid label",
 			metrics: []telegraf.Metric{
 				metric.New(
-					"cpu",
+					"cpu_time",
 					map[string]string{
 						"host-name": "example.org",
 					},
 					map[string]any{
-						"time_idle": 42.0,
+						"idle": 42.0,
 					},
 					time.Unix(0, 0),
 				),
