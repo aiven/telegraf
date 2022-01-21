@@ -12,3 +12,9 @@
   * the way that telegraf provides ( globbing ) does not fit our systemd unit
     structure
   * we need to check units inside of containers
+
+### Elasticsearch
+
+* 2022-01-21
+  * add cross cluster replication metrics ( they dont work for elasticsearch but
+    its a first step until we have an opensearch plugin )
