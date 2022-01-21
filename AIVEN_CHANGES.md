@@ -23,3 +23,14 @@
 
 * 2022-01-21
   * added aggregated IOPerf Stats ( probably upstreamable )
+
+## Output Plugins
+
+### Aiven Postgresql
+
+* 2022-01-21
+  * added postgresql output plugin from scratch to work with timescaledb (
+    probably upstreamable, although influxdata is not keen on supporting
+    timescaledb as it seems )
+  * predates the upstream postgresql plugin and was subsequently moved to the
+    aiven prefix
