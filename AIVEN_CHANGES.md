@@ -19,11 +19,13 @@
 
 * added postgresql output plugin from scratch to work with timescaledb ( probably upstreamable, although influxdata is not keen on supporting timescaledb as it seems )
 
-
 ### Kafka
 
 * added support to connect through socks proxy ( probably upstreamable )
 
+### Websocket
+
+* added support to connect through socks proxy ( probably upstreamable )
 
 ### Prometheus Client
 

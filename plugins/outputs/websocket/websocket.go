@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"time"
 
+	netproxy "golang.org/x/net/proxy"
+
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/config"
 	"github.com/influxdata/telegraf/plugins/common/proxy"
@@ -36,6 +38,12 @@ var sampleConfig = `
   ## Use TLS but skip chain & host verification
   # insecure_skip_verify = false
 
+  ## Optional SOCKS5 proxy Config
+  # socks5_enabled = false
+  # socks5_address = "127.0.0.1:1080"
+  # socks5_username = "alice"
+  # socks5_password = "pass123"
+
   ## Data format to output.
   ## Each data format has it's own unique set of configuration options, read
   ## more about them here:
@@ -64,6 +72,11 @@ type WebSocket struct {
 	Log            telegraf.Logger   `toml:"-"`
 	proxy.HTTPProxy
 	tls.ClientConfig
+
+	Socks5ProxyEnabled  bool   `toml:"socks5_enabled"`
+	Socks5ProxyAddress  string `toml:"socks5_address"`
+	Socks5ProxyUsername string `toml:"socks5_username"`
+	Socks5ProxyPassword string `toml:"socks5_password"`
 
 	conn       *ws.Conn
 	serializer serializers.Serializer
@@ -101,15 +114,29 @@ func (w *WebSocket) Connect() error {
 		return fmt.Errorf("error creating TLS config: %v", err)
 	}
 
-	dialProxy, err := w.HTTPProxy.Proxy()
+	dialHTTPProxy, err := w.HTTPProxy.Proxy()
 	if err != nil {
-		return fmt.Errorf("error creating proxy: %v", err)
+		return fmt.Errorf("error creating http proxy: %v", err)
 	}
 
 	dialer := &ws.Dialer{
-		Proxy:            dialProxy,
+		Proxy:            dialHTTPProxy,
 		HandshakeTimeout: time.Duration(w.ConnectTimeout),
 		TLSClientConfig:  tlsCfg,
+	}
+
+	if w.Socks5ProxyEnabled {
+		var auth *netproxy.Auth
+		if w.Socks5ProxyUsername != "" {
+			auth = new(netproxy.Auth)
+			auth.User = w.Socks5ProxyUsername
+			auth.Password = w.Socks5ProxyPassword
+		}
+		socks5Dialer, err := netproxy.SOCKS5("tcp", w.Socks5ProxyAddress, auth, netproxy.Direct)
+		if err != nil {
+			return fmt.Errorf("unable to create socks5 proxy: %v", err)
+		}
+		dialer.NetDial = socks5Dialer.Dial
 	}
 
 	headers := http.Header{}
