@@ -2,6 +2,10 @@
 
 ## Input Plugins
 
+### Elasticsearch
+
+* add cross cluster replication metrics ( they dont work for elasticsearch but its a first step until we have an opensearch plugin )
+
 ### Aiven Procstat
 
 * basically a clone of procstat containing incompatible changes that are likely not upstreamable

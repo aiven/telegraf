@@ -126,6 +126,9 @@ in mySQL configuration. See the performance schema [quick start][quick-start].
   # tls_key = "/etc/telegraf/key.pem"
   ## Use TLS but skip chain & host verification
   # insecure_skip_verify = false
+
+  ## Aggregate table_io_waits
+  # aggregate_table_io_waits = true
 ```
 
 ### Metric Version
