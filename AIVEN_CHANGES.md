@@ -2,6 +2,10 @@
 
 ## Input Plugins
 
+### Elasticsearch
+
+* add cross cluster replication metrics ( they dont work for elasticsearch but its a first step unil we have an opensearch plugin )
+
 ### Aiven Procstat
 
 * basically a clone of procstat containing incompatible changes that are likely not upstreamable
@@ -19,11 +23,13 @@
 
 * added postgresql output plugin from scratch to work with timescaledb ( probably upstreamable, although influxdata is not keen on supporting timescaledb as it seems )
 
-
 ### Kafka
 
 * added support to connect through socks proxy ( probably upstreamable )
 
+### Websocket
+
+* added support to connect through socks proxy ( probably upstreamable )
 
 ### Prometheus Client
 
