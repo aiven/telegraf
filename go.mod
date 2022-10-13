@@ -5,6 +5,9 @@ go 1.18
 // Workaround for https://github.com/lxc/lxd/issues/10745 (failing "go list -m all")
 replace google.golang.org/grpc/naming => google.golang.org/grpc v1.29.1
 
+// Workaround for https://github.com/collectd/go-collectd/issues/94
+replace collectd.org v0.5.0 => github.com/collectd/go-collectd v0.5.0
+
 require (
 	cloud.google.com/go/bigquery v1.33.0
 	cloud.google.com/go/monitoring v1.5.0
