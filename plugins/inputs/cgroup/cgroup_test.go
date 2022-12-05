@@ -13,6 +13,7 @@ import (
 var cg1 = &CGroup{
 	Paths: []string{"testdata/memory"},
 	Files: []string{
+		"memory.max",
 		"memory.empty",
 		"memory.max_usage_in_bytes",
 		"memory.limit_in_bytes",
@@ -332,4 +333,20 @@ func TestCgroupStatistics_7(t *testing.T) {
 		"blkio.throttle.io_serviced.Total":      int64(265885),
 	}
 	acc.AssertContainsTaggedFields(t, "cgroup", fields, tags)
+}
+
+var cg1_v2 = &CGroup{
+	Paths: []string{"testdata/v2/memory"},
+	Files: []string{
+		"memory.max",
+	},
+}
+
+func TestCgroupStatistics_1_v2(t *testing.T) {
+	var acc testutil.Accumulator
+
+	err := acc.GatherError(cg1_v2.Gather)
+	require.NoError(t, err)
+
+	acc.AssertDoesNotContainMeasurement(t, "cgroup")
 }

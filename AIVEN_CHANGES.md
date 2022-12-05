@@ -2,6 +2,10 @@
 
 ## Input Plugins
 
+### CGroup
+
+* fix handling of memory.high and memory.max default value (max)
+
 ### Elasticsearch
 
 * add cross cluster replication metrics ( they dont work for elasticsearch but its a first step until we have an opensearch plugin )
