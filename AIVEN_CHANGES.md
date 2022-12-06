@@ -5,6 +5,7 @@
 ### CGroup
 
 * fix handling of memory.high and memory.max default value (max)
+* ignore errors on unknown formats to ensure forward compatibility
 
 ### Elasticsearch
 

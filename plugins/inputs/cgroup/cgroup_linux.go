@@ -4,7 +4,6 @@
 package cgroup
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -147,8 +146,7 @@ func (fd *fileData) format() (*fileFormat, error) {
 			return &ff, nil
 		}
 	}
-
-	return nil, fmt.Errorf("%v: unknown file format", fd.path)
+	return nil, nil
 }
 
 func (fd *fileData) parse(fields map[string]interface{}) error {
@@ -156,8 +154,9 @@ func (fd *fileData) parse(fields map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	format.parser(filepath.Base(fd.path), fields, fd.data)
+	if format != nil {
+		format.parser(filepath.Base(fd.path), fields, fd.data)
+	}
 	return nil
 }
 
@@ -173,12 +172,6 @@ const keyPattern = "[[:alnum:]:_]+"
 const valuePattern = "[\\d-]+"
 
 var fileFormats = [...]fileFormat{
-	// 	max\n
-	{
-		name:    "Default value for memory.max, memory.high and memory.swap.max",
-		pattern: "^max\n$",
-		parser:  func(measurement string, fields map[string]interface{}, b []byte) {},
-	},
 	// 	VAL\n
 	{
 		name:    "Single value",
