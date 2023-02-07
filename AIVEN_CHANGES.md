@@ -37,3 +37,5 @@
 ### Prometheus and Prometheus Remote Write
 
 * changes to make `Plugins.Prometheus Client` work for the same reasons as stated there
+* cherry-picked 872963aee6a727add296919bb79bca686772d3cc to sort labels alphabetically
+
