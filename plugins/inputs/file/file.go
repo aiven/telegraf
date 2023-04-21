@@ -7,10 +7,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/dimchansky/utfbom"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/config"
 	"github.com/influxdata/telegraf/internal/globpath"
 	"github.com/influxdata/telegraf/plugins/common/encoding"
 	"github.com/influxdata/telegraf/plugins/inputs"
@@ -20,9 +22,10 @@ import (
 var sampleConfig string
 
 type File struct {
-	Files             []string `toml:"files"`
-	FileTag           string   `toml:"file_tag"`
-	CharacterEncoding string   `toml:"character_encoding"`
+	Files             []string         `toml:"files"`
+	FileTag           string           `toml:"file_tag"`
+	CharacterEncoding string           `toml:"character_encoding"`
+	GracePeriod       *config.Duration `toml:"grace_period"`
 
 	parserFunc telegraf.ParserFunc
 	filenames  []string
@@ -53,6 +56,9 @@ func (f *File) Gather(acc telegraf.Accumulator) error {
 		for _, m := range metrics {
 			if f.FileTag != "" {
 				m.AddTag(f.FileTag, filepath.Base(k))
+			}
+			if f.GracePeriod != nil && time.Since(m.Time()) >= time.Duration(*f.GracePeriod) {
+				continue
 			}
 			acc.AddMetric(m)
 		}

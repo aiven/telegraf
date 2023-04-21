@@ -13,6 +13,10 @@
 * the way that telegraf provides ( globbing ) does not fit our systemd unit structure
 * we need to check units inside of containers
 
+### File
+
+* ignore stale metrics from file with a configurable grace period
+
 ### MySQL
 
 * added aggregated IOPerf Stats ( probably upstreamable )

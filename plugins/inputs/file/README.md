@@ -45,6 +45,10 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## significantly. Read more about cardinality here:
   ## https://docs.influxdata.com/influxdb/cloud/reference/glossary/#series-cardinality
   # file_tag = ""
+   
+
+  ## Discard metrics that have gone stale because the file was not refreshed
+  # grace_period = "1h"
 ```
 
 ## Metrics

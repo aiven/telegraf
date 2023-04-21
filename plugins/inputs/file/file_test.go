@@ -15,9 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/config"
 	"github.com/influxdata/telegraf/metric"
 	"github.com/influxdata/telegraf/plugins/parsers/csv"
 	"github.com/influxdata/telegraf/plugins/parsers/grok"
+	"github.com/influxdata/telegraf/plugins/parsers/influx"
 	"github.com/influxdata/telegraf/plugins/parsers/json"
 	"github.com/influxdata/telegraf/testutil"
 )
@@ -80,6 +82,27 @@ func TestJSONParserCompile(t *testing.T) {
 	require.NoError(t, r.Gather(&acc))
 	require.Equal(t, map[string]string{"parent_ignored_child": "hi"}, acc.Metrics[0].Tags)
 	require.Equal(t, 5, len(acc.Metrics[0].Fields))
+}
+
+func TestStaleMetric(t *testing.T) {
+	var acc testutil.Accumulator
+
+	var gracePeriod = config.Duration(time.Hour)
+	wd, _ := os.Getwd()
+	r := File{
+		Files:       []string{filepath.Join(wd, "dev/testfiles/stale.influx")},
+		GracePeriod: &gracePeriod,
+	}
+	require.NoError(t, r.Init())
+
+	r.SetParserFunc(func() (telegraf.Parser, error) {
+		p := &influx.Parser{}
+		err := p.Init()
+		return p, err
+	})
+
+	require.NoError(t, r.Gather(&acc))
+	require.Empty(t, acc.Metrics)
 }
 
 func TestGrokParser(t *testing.T) {
