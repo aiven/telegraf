@@ -27,7 +27,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
 	github.com/aliyun/alibaba-cloud-sdk-go v1.62.193
 	github.com/amir/raidman v0.0.0-20170415203553-1ccc43bfb9c9
-	github.com/antchfx/jsonquery v1.3.1
+	github.com/antchfx/jsonquery v1.3.3
 	github.com/antchfx/xmlquery v1.3.15
 	github.com/antchfx/xpath v1.2.4
 	github.com/apache/iotdb-client-go v0.12.2-0.20220722111104-cd17da295b46
@@ -155,7 +155,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/sleepinggenius2/gosmi v0.4.4
 	github.com/snowflakedb/gosnowflake v1.6.13
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/tbrandon/mbserver v0.0.0-20170611213546-993e1772cc62
 	github.com/testcontainers/testcontainers-go v0.18.0
 	github.com/thomasklein94/packer-plugin-libvirt v0.3.4
