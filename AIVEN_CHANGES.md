@@ -13,6 +13,11 @@
     structure
   * we need to check units inside of containers
 
+### ClickHouse
+
+* 2023-10-30
+  * Add extra metrics to monitor the replication queue
+
 ### Elasticsearch
 
 * 2022-01-21
