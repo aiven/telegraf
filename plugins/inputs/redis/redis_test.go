@@ -93,7 +93,7 @@ func TestRedis_ParseMetrics(t *testing.T) {
 	tags := map[string]string{"host": "redis.net"}
 	rdr := bufio.NewReader(strings.NewReader(testOutput))
 
-	err := gatherInfoOutput(rdr, &acc, tags)
+	err := gatherInfoOutput(rdr, &acc, tags, nil)
 	require.NoError(t, err)
 
 	tags = map[string]string{"host": "redis.net", "replication_role": "master"}
@@ -313,7 +313,7 @@ func TestRedis_ParseFloatOnInts(t *testing.T) {
 	var acc testutil.Accumulator
 	tags := map[string]string{"host": "redis.net"}
 	rdr := bufio.NewReader(strings.NewReader(strings.Replace(testOutput, "mem_fragmentation_ratio:0.81", "mem_fragmentation_ratio:1", 1)))
-	err := gatherInfoOutput(rdr, &acc, tags)
+	err := gatherInfoOutput(rdr, &acc, tags, nil)
 	require.NoError(t, err)
 	var m *testutil.Metric
 	for i := range acc.Metrics {
@@ -332,7 +332,7 @@ func TestRedis_ParseIntOnFloats(t *testing.T) {
 	var acc testutil.Accumulator
 	tags := map[string]string{"host": "redis.net"}
 	rdr := bufio.NewReader(strings.NewReader(strings.Replace(testOutput, "clients_in_timeout_table:0", "clients_in_timeout_table:0.0", 1)))
-	err := gatherInfoOutput(rdr, &acc, tags)
+	err := gatherInfoOutput(rdr, &acc, tags, nil)
 	require.NoError(t, err)
 	var m *testutil.Metric
 	for i := range acc.Metrics {
@@ -351,7 +351,7 @@ func TestRedis_ParseStringOnInts(t *testing.T) {
 	var acc testutil.Accumulator
 	tags := map[string]string{"host": "redis.net"}
 	rdr := bufio.NewReader(strings.NewReader(strings.Replace(testOutput, "maxmemory_policy:no-eviction", "maxmemory_policy:1", 1)))
-	err := gatherInfoOutput(rdr, &acc, tags)
+	err := gatherInfoOutput(rdr, &acc, tags, nil)
 	require.NoError(t, err)
 	var m *testutil.Metric
 	for i := range acc.Metrics {
@@ -370,7 +370,7 @@ func TestRedis_ParseIntOnString(t *testing.T) {
 	var acc testutil.Accumulator
 	tags := map[string]string{"host": "redis.net"}
 	rdr := bufio.NewReader(strings.NewReader(strings.Replace(testOutput, "clients_in_timeout_table:0", `clients_in_timeout_table:""`, 1)))
-	err := gatherInfoOutput(rdr, &acc, tags)
+	err := gatherInfoOutput(rdr, &acc, tags, nil)
 	require.NoError(t, err)
 	var m *testutil.Metric
 	for i := range acc.Metrics {
@@ -387,20 +387,22 @@ func TestRedis_ParseIntOnString(t *testing.T) {
 
 func TestRedis_GatherErrorstatsLine(t *testing.T) {
 	var acc testutil.Accumulator
+	var mockLogger testutil.CaptureLogger
 	globalTags := map[string]string{}
 
-	gatherErrorStatsLine("FOO", "BAR", &acc, globalTags)
-	require.Len(t, acc.Errors, 1)
-	require.Equal(t, "invalid line for \"FOO\": BAR", acc.Errors[0].Error())
+	mockLogger.Clear()
+	gatherErrorstatsLine("FOO", "BAR", &acc, globalTags, &mockLogger)
+	require.Equal(t, 1, mockLogger.NMessages())
+	require.Equal(t, "Missing '=' in line BAR (name:FOO).", mockLogger.Messages()[0].Text)
 
-	acc = testutil.Accumulator{}
-	gatherErrorStatsLine("FOO", "BAR=a", &acc, globalTags)
-	require.Len(t, acc.Errors, 1)
-	require.Equal(t, "parsing value in line \"BAR=a\" failed: strconv.ParseInt: parsing \"a\": invalid syntax", acc.Errors[0].Error())
+	mockLogger.Clear()
+	gatherErrorstatsLine("FOO", "BAR=a", &acc, globalTags, &mockLogger)
+	require.Equal(t, 1, mockLogger.NMessages())
+	require.Equal(t, "Error while parsing BAR=a: strconv.ParseInt: parsing \"a\": invalid syntax", mockLogger.Messages()[0].Text)
 
-	acc = testutil.Accumulator{}
-	gatherErrorStatsLine("FOO", "BAR=77", &acc, globalTags)
-	require.Empty(t, acc.Errors)
+	mockLogger.Clear()
+	gatherErrorstatsLine("FOO", "BAR=77", &acc, globalTags, &mockLogger)
+	require.Equal(t, 0, mockLogger.NMessages())
 }
 
 const testOutput = `# Server

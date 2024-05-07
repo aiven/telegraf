@@ -209,7 +209,7 @@ func (r *Redis) Gather(acc telegraf.Accumulator) error {
 		wg.Add(1)
 		go func(client client) {
 			defer wg.Done()
-			acc.AddError(gatherServer(client, acc))
+			acc.AddError(gatherServer(client, acc, r.Log))
 			acc.AddError(r.gatherCommandValues(client, acc))
 		}(cl)
 	}
@@ -357,17 +357,23 @@ func (r *redisClient) close() error {
 	return r.client.Close()
 }
 
-func gatherServer(client client, acc telegraf.Accumulator) error {
+func gatherServer(client client, acc telegraf.Accumulator, logger telegraf.Logger) error {
 	info, err := client.info().Result()
 	if err != nil {
 		return err
 	}
 
 	rdr := strings.NewReader(info)
-	return gatherInfoOutput(rdr, acc, client.baseTags())
+	return gatherInfoOutput(rdr, acc, client.baseTags(), logger)
 }
 
-func gatherInfoOutput(rdr io.Reader, acc telegraf.Accumulator, tags map[string]string) error {
+// gatherInfoOutput gathers
+func gatherInfoOutput(
+	rdr io.Reader,
+	acc telegraf.Accumulator,
+	tags map[string]string,
+	log telegraf.Logger,
+) error {
 	var section string
 	var keyspaceHits, keyspaceMisses int64
 
@@ -435,7 +441,7 @@ func gatherInfoOutput(rdr io.Reader, acc telegraf.Accumulator, tags map[string]s
 			}
 			if section == "Errorstats" {
 				kline := strings.TrimSpace(parts[1])
-				gatherErrorStatsLine(name, kline, acc, tags)
+				gatherErrorstatsLine(name, kline, acc, tags, log)
 				continue
 			}
 
@@ -641,25 +647,30 @@ func gatherReplicationLine(name, line string, acc telegraf.Accumulator, globalTa
 //
 // errorstat_ERR:count=37
 // errorstat_MOVED:count=3626
-func gatherErrorStatsLine(name, line string, acc telegraf.Accumulator, globalTags map[string]string) {
+func gatherErrorstatsLine(
+	name string,
+	line string,
+	acc telegraf.Accumulator,
+	globalTags map[string]string,
+	log telegraf.Logger,
+) {
 	tags := make(map[string]string, len(globalTags)+1)
 	for k, v := range globalTags {
 		tags[k] = v
 	}
 	tags["err"] = strings.TrimPrefix(name, "errorstat_")
-	kv := strings.Split(line, "=")
-	if len(kv) < 2 {
-		acc.AddError(fmt.Errorf("invalid line for %q: %s", name, line))
-		return
+	if strings.Contains(line, "=") {
+		kv := strings.Split(line, "=")
+		ival, err := strconv.ParseInt(kv[1], 10, 64)
+		if err == nil {
+			fields := map[string]interface{}{"total": ival}
+			acc.AddFields("redis_errorstat", fields, tags)
+		} else if log != nil {
+			log.Debugf("Error while parsing %v: %v", line, err)
+		}
+	} else if log != nil {
+		log.Debugf("Missing '=' in line %v (name:%v).", line, name)
 	}
-	ival, err := strconv.ParseInt(kv[1], 10, 64)
-	if err != nil {
-		acc.AddError(fmt.Errorf("parsing value in line %q failed: %w", line, err))
-		return
-	}
-
-	fields := map[string]interface{}{"total": ival}
-	acc.AddFields("redis_errorstat", fields, tags)
 }
 
 func setExistingFieldsFromStruct(fields map[string]interface{}, o *redisFieldTypes) {
