@@ -351,7 +351,7 @@ func (r *Redis) gatherServer(client Client, acc telegraf.Accumulator) error {
 	}
 
 	rdr := strings.NewReader(info)
-	return gatherInfoOutput(rdr, acc, client.BaseTags())
+	return gatherInfoOutput(rdr, acc, client.BaseTags(), r.Log)
 }
 
 // gatherInfoOutput gathers
@@ -359,6 +359,7 @@ func gatherInfoOutput(
 	rdr io.Reader,
 	acc telegraf.Accumulator,
 	tags map[string]string,
+	log telegraf.Logger,
 ) error {
 	var section string
 	var keyspaceHits, keyspaceMisses int64
@@ -422,7 +423,7 @@ func gatherInfoOutput(
 			}
 			if section == "Errorstats" {
 				kline := strings.TrimSpace(parts[1])
-				gatherErrorstatsLine(name, kline, acc, tags)
+				gatherErrorstatsLine(name, kline, acc, tags, log)
 				continue
 			}
 
@@ -613,17 +614,24 @@ func gatherErrorstatsLine(
 	line string,
 	acc telegraf.Accumulator,
 	globalTags map[string]string,
+	log telegraf.Logger,
 ) {
 	tags := make(map[string]string, len(globalTags)+1)
 	for k, v := range globalTags {
 		tags[k] = v
 	}
 	tags["err"] = strings.TrimPrefix(name, "errorstat_")
-	kv := strings.Split(line, "=")
-	ival, err := strconv.ParseInt(kv[1], 10, 64)
-	if err == nil {
-		fields := map[string]interface{}{"total": ival}
-		acc.AddFields("redis_errorstat", fields, tags)
+	if strings.Contains(line, "=") {
+		kv := strings.Split(line, "=")
+		ival, err := strconv.ParseInt(kv[1], 10, 64)
+		if err == nil {
+			fields := map[string]interface{}{"total": ival}
+			acc.AddFields("redis_errorstat", fields, tags)
+		} else if log != nil {
+			log.Debugf("Error while parsing %v: %v", line, err)
+		}
+	} else if log != nil {
+		log.Debugf("Missing '=' in line %v (name:%v).", line, name)
 	}
 }
 
