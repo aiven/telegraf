@@ -2,7 +2,7 @@
 
 This output plugin writes all metrics to PostgreSQL.
 
-### Configuration:
+## Configuration
 
 ```toml
 # Send metrics to postgres
