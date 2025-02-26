@@ -23,6 +23,9 @@
 * 2022-01-21
   * add cross cluster replication metrics ( they dont work for elasticsearch but
     its a first step until we have an opensearch plugin )
+* 2025-02-26
+  * add remote-backed store stats for OpenSearch ( `remote_store_stats`,
+    requires `local = true` )
 
 ### MySQL
 
