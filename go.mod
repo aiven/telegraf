@@ -98,7 +98,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/cel-go v0.23.0
 	github.com/google/gnxi v0.0.0-20231026134436-d82d9936af15
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/licensecheck v0.3.1
 	github.com/google/uuid v1.6.0
