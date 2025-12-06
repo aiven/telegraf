@@ -12,6 +12,9 @@
   * the way that telegraf provides ( globbing ) does not fit our systemd unit
     structure
   * we need to check units inside of containers
+* 2025-12-06
+  * collect per-process swap from memory maps, since `MemoryInfo()` reports no
+    swap on Linux
 
 ### ClickHouse
 

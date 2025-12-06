@@ -221,11 +221,11 @@ func (p *Procstat) addMetrics(proc Process, acc telegraf.Accumulator) {
 	if err == nil {
 		fields[prefix+"memory_rss"] = mem.RSS
 		fields[prefix+"memory_vms"] = mem.VMS
-		fields[prefix+"memory_swap"] = mem.Swap
 		fields[prefix+"memory_data"] = mem.Data
 		fields[prefix+"memory_stack"] = mem.Stack
 		fields[prefix+"memory_locked"] = mem.Locked
 	}
+	addSwapToMemStats(proc, prefix, fields)
 
 	mem_perc, err := proc.MemoryPercent()
 	if err == nil {
