@@ -79,7 +79,7 @@ func TestMockExecCommand(t *testing.T) {
            │ ├─TestGather_systemdUnitPIDs.service
            │ │ └─11408 /usr/bin/foo
            │ │ └─11420 /usr/bin/bar
-           │ ├─TestTrailingSpaces_systemdUnitPIDs.service 	
+           │ ├─TestTrailingSpaces_systemdUnitPIDs.service
            │ │ └─11428 /usr/bin/foo
            │ ├─chronyd.service
            │ │ └─1931 /usr/sbin/chronyd
@@ -203,6 +203,10 @@ func (p *testProc) Times() (*cpu.TimesStat, error) {
 
 func (p *testProc) RlimitUsage(gatherUsage bool) ([]process.RlimitStat, error) {
 	return []process.RlimitStat{}, nil
+}
+
+func (p *testProc) MemoryMaps(grouped bool) (*[]process.MemoryMapsStat, error) {
+	return &[]process.MemoryMapsStat{}, nil
 }
 
 var pid PID = PID(42)
