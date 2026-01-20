@@ -1,28 +1,20 @@
 # Tail Input Plugin
 
-The tail plugin "tails" a logfile and parses each log message.
+This service plugin continuously reads a file and parses new data as it arrives
+similar to the [tail -f command][tail]. The incoming messages are expected to be
+in one of the supported [data formats][data_formats].
 
-By default, the tail plugin acts like the following unix tail command:
+⭐ Telegraf v1.1.2
+🏷️ logging
+💻 all
 
-```shell
-tail -F --lines=0 myfile.log
-```
-
-- `-F` means that it will follow the _name_ of the given file, so
-that it will be compatible with log-rotated files, and that it will retry on
-inaccessible files.
-- `--lines=0` means that it will start at the end of the file (unless
-the `initial_read_offset` option is set).
-
-see <http://man7.org/linux/man-pages/man1/tail.1.html> for more details.
-
-The plugin expects messages in one of the [Telegraf Input Data
-Formats](../../../docs/DATA_FORMATS_INPUT.md).
+[tail]: https://man7.org/linux/man-pages/man1/tail.1.html
+[data_formats]: /docs/DATA_FORMATS_INPUT.md
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -32,10 +24,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

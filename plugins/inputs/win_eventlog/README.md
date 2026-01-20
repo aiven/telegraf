@@ -1,22 +1,23 @@
 # Windows Eventlog Input Plugin
 
-Telegraf's win_eventlog input plugin gathers metrics from the windows event log.
+This plugin gathers metrics from the [Windows event log][win_event_log] on
+Windows Vista and higher.
 
-## Collect Windows Event Log messages
+> [!NOTE]
+> Some event channels, like the System Log, require Administrator permissions
+> to subscribe.
 
-Supports Windows Vista and higher.
+⭐ Telegraf v1.16.0
+🏷️ logging
+💻 windows
 
-Telegraf should have Administrator permissions to subscribe for some of the
-Windows Events Channels, like System Log.
-
-Telegraf minimum version: Telegraf 1.16.0
+[win_event_log]: https://learn.microsoft.com/en-us/shows/inside/event-viewer
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -120,6 +121,11 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## The values below are included by default.
   ## Globbing supported (e.g. "Level*" matches both "Level" and "LevelText")
   # exclude_empty = ["Task", "Opcode", "*ActivityID", "UserID"]
+
+  ## Maximum memory size available for an event to render
+  ## Events larger that that are not processed and will not create a metric.
+  ## NOTE: As events are encoded in UTF-16 we need two bytes per character.
+  # event_size_limit = "64KB"
 ```
 
 ### Filtering
@@ -164,8 +170,8 @@ amount of events you log.
 
 You can send any field, *System*, *Computed* or *XML* as tag field. List of
 those fields is in the `event_tags` config array. Globbing is supported in this
-array, i.e. `Level*` for all fields beginning with `Level`, or `L?vel` for all
-fields where the name is `Level`, `L3vel`, `L@vel` and so on. Tag fields are
+array. For example, `Level*` matches all fields beginning with `Level`, and `L?vel` matches all
+fields where the name is `Level`, `L3vel`, `L@vel`, and so on. Tag fields are
 converted to strings automatically.
 
 By default, all other fields are sent, but you can limit that either by listing
@@ -266,7 +272,7 @@ CbsPackageChangeState_Client = "UpdateAgentLCU"
 If there are more than one field with the same name, all those fields are given
 suffix with number: `_1`, `_2` and so on.
 
-## Localization
+### Localization
 
 Human readable Event Description is in the Message field. But it is better to be
 skipped in favour of the Event XML values, because they are more

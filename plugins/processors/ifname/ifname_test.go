@@ -10,8 +10,8 @@ import (
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/config"
-	"github.com/influxdata/telegraf/internal/snmp"
 	"github.com/influxdata/telegraf/metric"
+	"github.com/influxdata/telegraf/plugins/common/snmp"
 	"github.com/influxdata/telegraf/testutil"
 )
 
@@ -200,7 +200,7 @@ func TestTracking(t *testing.T) {
 		MaxParallelLookups: 100,
 	}
 	require.NoError(t, plugin.Init())
-	plugin.cache.Put("127.0.0.1", nameMap{1: "lo"})
+	plugin.cache.put("127.0.0.1", nameMap{1: "lo"})
 
 	var acc testutil.Accumulator
 	require.NoError(t, plugin.Start(&acc))

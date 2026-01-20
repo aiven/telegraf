@@ -29,28 +29,19 @@ type DiskBuffer struct {
 	// Used to know whether to discard tracking metrics.
 	originalEnd uint64
 
-	// The WAL library currently has no way to "fully empty" the walfile. In this case,
-	// we have to do our best and track that the walfile "should" be empty, so that next
-	// write, we can remove the invalid entry (also skipping this entry if it is being read).
-	isEmpty bool
-
 	// The mask contains offsets of metric already removed during a previous
 	// transaction. Metrics at those offsets should not be contained in new
 	// batches.
 	mask []int
 }
 
-func NewDiskBuffer(name, id, path string, stats BufferStats) (*DiskBuffer, error) {
+func NewDiskBuffer(id, path string, stats BufferStats) (*DiskBuffer, error) {
 	filePath := filepath.Join(path, id)
-	walFile, err := wal.Open(filePath, nil)
+	walFile, err := wal.Open(filePath, &wal.Options{
+		AllowEmpty: true,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open wal file: %w", err)
-	}
-	//nolint:errcheck // cannot error here
-	if index, _ := walFile.FirstIndex(); index == 0 {
-		// simple way to test if the walfile is freshly initialized, meaning no existing file was found
-		log.Printf("I! WAL file not found for plugin outputs.%s (%s), "+
-			"this can safely be ignored if you added this plugin instance for the first time", name, id)
 	}
 
 	buf := &DiskBuffer{
@@ -58,7 +49,7 @@ func NewDiskBuffer(name, id, path string, stats BufferStats) (*DiskBuffer, error
 		file:        walFile,
 		path:        filePath,
 	}
-	if buf.length() > 0 {
+	if buf.Len() > 0 {
 		buf.originalEnd = buf.writeIndex()
 	}
 	return buf, nil
@@ -71,10 +62,6 @@ func (b *DiskBuffer) Len() int {
 }
 
 func (b *DiskBuffer) length() int {
-	if b.isEmpty {
-		return 0
-	}
-
 	return b.entries() - len(b.mask)
 }
 
@@ -89,7 +76,7 @@ func (b *DiskBuffer) entries() int {
 func (b *DiskBuffer) readIndex() uint64 {
 	index, err := b.file.FirstIndex()
 	if err != nil {
-		panic(err) // can only occur with a corrupt wal file
+		panic(err) // can only occur with a corrupt or closed wal file
 	}
 	return index
 }
@@ -98,7 +85,7 @@ func (b *DiskBuffer) readIndex() uint64 {
 func (b *DiskBuffer) writeIndex() uint64 {
 	index, err := b.file.LastIndex()
 	if err != nil {
-		panic(err) // can only occur with a corrupt wal file
+		panic(err) // can only occur with a corrupt or closed wal file
 	}
 	return index + 1
 }
@@ -112,8 +99,6 @@ func (b *DiskBuffer) Add(metrics ...telegraf.Metric) int {
 		if !b.addSingleMetric(m) {
 			dropped++
 		}
-		// as soon as a new metric is added, if this was empty, try to flush the "empty" metric out
-		b.handleEmptyFile()
 	}
 	b.BufferSize.Set(int64(b.length()))
 	return dropped
@@ -124,12 +109,11 @@ func (b *DiskBuffer) addSingleMetric(m telegraf.Metric) bool {
 	if err != nil {
 		panic(err)
 	}
-	err = b.file.Write(b.writeIndex(), data)
-	if err == nil {
-		b.metricAdded()
-		return true
+	if err := b.file.Write(b.writeIndex(), data); err != nil {
+		return false
 	}
-	return false
+	b.metricAdded()
+	return true
 }
 
 func (b *DiskBuffer) BeginTransaction(batchSize int) *Transaction {
@@ -146,14 +130,12 @@ func (b *DiskBuffer) BeginTransaction(batchSize int) *Transaction {
 	offsets := make([]int, 0, batchSize)
 	readIndex := b.batchFirst
 	endIndex := b.writeIndex()
-	offset := 0
-	for batchSize > 0 && readIndex < endIndex {
+	for offset := 0; batchSize > 0 && readIndex < endIndex; offset++ {
 		data, err := b.file.Read(readIndex)
 		if err != nil {
 			panic(err)
 		}
 		readIndex++
-		offset++
 
 		if slices.Contains(b.mask, offset) {
 			// Metric is masked by a previous write and is scheduled for removal
@@ -171,7 +153,9 @@ func (b *DiskBuffer) BeginTransaction(batchSize int) *Transaction {
 		m, err := metric.FromBytes(data)
 		if err != nil {
 			if errors.Is(err, metric.ErrSkipTracking) {
-				// could not look up tracking information for metric, skip
+				// Could not look up tracking information for metric so skip
+				// the metric and mask it so it is truncated later on.
+				b.mask = append(b.mask, offset)
 				continue
 			}
 			// non-recoverable error in deserialization, abort
@@ -179,7 +163,10 @@ func (b *DiskBuffer) BeginTransaction(batchSize int) *Transaction {
 			panic(err)
 		}
 		if _, ok := m.(telegraf.TrackingMetric); ok && readIndex < b.originalEnd {
-			// tracking metric left over from previous instance, skip
+			// This tracking metric is a left-over from a previous instance e.g.
+			// after restarting Telegraf. Skip the metric and mask it so it is
+			// trucated later on
+			b.mask = append(b.mask, offset)
 			continue
 		}
 
@@ -230,34 +217,29 @@ func (b *DiskBuffer) EndTransaction(tx *Transaction) {
 	}
 
 	// Determine up to which index we can remove the entries from the WAL file
-	var removeIdx int
+	var correction int
 	for i, offset := range b.mask {
 		if offset != i {
 			break
 		}
-		removeIdx = offset
+		correction = offset
 	}
+	// The 'correction' denotes the offset to subtract from the remaining mask
+	// (if any) and the 'removalIdx' denotes the index to use when truncating
+	// the file and mask. Keep them separate to be able to handle the special
+	// "the file cannot be empty" property of the WAL file.
+	removeIdx := correction + 1
 
 	// Remove the metrics in front from the WAL file
-	b.isEmpty = b.entries()-removeIdx-1 <= 0
-	if b.isEmpty {
-		// WAL files cannot be fully empty but need to contain at least one
-		// item to not throw an error
-		if err := b.file.TruncateFront(b.writeIndex()); err != nil {
-			log.Printf("E! batch length: %d, first: %d, size: %d", len(tx.Batch), b.batchFirst, b.batchSize)
-			panic(err)
-		}
-	} else {
-		if err := b.file.TruncateFront(b.batchFirst + uint64(removeIdx+1)); err != nil {
-			log.Printf("E! batch length: %d, first: %d, size: %d", len(tx.Batch), b.batchFirst, b.batchSize)
-			panic(err)
-		}
+	if err := b.file.TruncateFront(b.batchFirst + uint64(removeIdx)); err != nil {
+		log.Printf("E! batch length: %d, first: %d, size: %d", len(tx.Batch), b.batchFirst, b.batchSize)
+		panic(err)
 	}
 
 	// Truncate the mask and update the relative offsets
-	b.mask = b.mask[:removeIdx]
+	b.mask = b.mask[removeIdx:]
 	for i := range b.mask {
-		b.mask[i] -= removeIdx
+		b.mask[i] -= correction
 	}
 
 	// check if the original end index is still valid, clear if not
@@ -274,25 +256,13 @@ func (b *DiskBuffer) Stats() BufferStats {
 }
 
 func (b *DiskBuffer) Close() error {
-	return b.file.Close()
+	if err := b.file.Close(); err != nil {
+		return fmt.Errorf("closing buffer failed: %w", err)
+	}
+	return nil
 }
 
 func (b *DiskBuffer) resetBatch() {
 	b.batchFirst = 0
 	b.batchSize = 0
-}
-
-// This is very messy and not ideal, but serves as the only way I can find currently
-// to actually treat the walfile as empty if needed, since Truncate() calls require
-// that at least one entry remains in them otherwise they return an error.
-// Related issue: https://github.com/tidwall/wal/issues/20
-func (b *DiskBuffer) handleEmptyFile() {
-	if !b.isEmpty {
-		return
-	}
-	if err := b.file.TruncateFront(b.readIndex() + 1); err != nil {
-		log.Printf("E! readIndex: %d, buffer len: %d", b.readIndex(), b.length())
-		panic(err)
-	}
-	b.isEmpty = false
 }

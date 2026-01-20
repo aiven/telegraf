@@ -1,15 +1,17 @@
 # Amon Output Plugin
 
 This plugin writes metrics to [Amon monitoring platform][amon]. It requires a
-`serverkey` and `amoninstance` URL which can be obtained [here][amon_monitoring]
-for your account.
+`serverkey` and `amoninstance` URL which can be obtained from the
+[website][amon_monitoring] for your account.
 
 > [!IMPORTANT]
 > If point values being sent cannot be converted to a `float64`, the metric is
 > skipped.
 
 ⭐ Telegraf v0.2.1
-🏷️ databases
+🚩 Telegraf v1.37.0
+🔥 Telegraf v1.40.0
+🏷️ datastore
 💻 all
 
 [amon]: https://www.amon.cx
@@ -17,10 +19,9 @@ for your account.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

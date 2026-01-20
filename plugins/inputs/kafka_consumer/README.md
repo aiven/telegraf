@@ -1,12 +1,22 @@
-# Kafka Consumer Input Plugin
+# Apache Kafka Consumer Input Plugin
 
-The [Kafka][kafka] consumer plugin reads from Kafka
-and creates metrics using one of the supported [input data formats][].
+This service plugin consumes messages from [Kafka brokers][kafka] in one of the
+supported [data formats][data_formats]. The plugin uses
+[consumer groups][consumer_groups] when talking to the Kafka cluster so multiple
+instances of Telegraf can consume messages from the same topic in parallel.
+
+⭐ Telegraf v0.2.3
+🏷️ messaging
+💻 all
+
+[kafka]: https://kafka.apache.org
+[consumer_groups]: http://godoc.org/github.com/wvanbergen/kafka/consumergroup
+[data_formats]: /docs/DATA_FORMATS_INPUT.md
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -16,10 +26,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -36,6 +45,9 @@ using the `startup_error_behavior` setting. Available values are:
 - `retry`:  Telegraf will try to startup the plugin in every gather or write
             cycle in case of startup errors. The plugin is disabled until
             the startup succeeds.
+- `probe`:  Telegraf will probe the plugin's function (if possible) and disables
+            the plugin in case probing fails. If the plugin does not support
+            probing, Telegraf will behave as if `ignore` was set instead.
 
 ## Secret-store support
 
@@ -57,7 +69,7 @@ to use them.
   ## Set the minimal supported Kafka version. Should be a string contains
   ## 4 digits in case if it is 0 version and 3 digits for versions starting
   ## from 1.0.0 separated by dot. This setting enables the use of new
-  ## Kafka features and APIs.  Must be 0.10.2.0(used as default) or greater.
+  ## Kafka features and APIs. Must be 0.10.2.0(used as default) or greater.
   ## Please, check the list of supported versions at
   ## https://pkg.go.dev/github.com/Shopify/sarama#SupportedVersions
   ##   ex: kafka_version = "2.6.0"
@@ -67,7 +79,7 @@ to use them.
   ## Topics to consume.
   topics = ["telegraf"]
 
-  ## Topic regular expressions to consume.  Matches will be added to topics.
+  ## Topic regular expressions to consume. Matches will be added to topics.
   ## Example: topic_regexps = [ "*test", "metric[0-9A-z]*" ]
   # topic_regexps = [ ]
 
@@ -106,14 +118,13 @@ to use them.
   ## Defaults to the OS configuration if not specified or zero.
   # keep_alive_period = "15s"
 
-  ## SASL authentication credentials.  These settings should typically be used
+  ## SASL authentication credentials. These settings should typically be used
   ## with TLS encryption enabled
-  # sasl_username = "kafka"
-  # sasl_password = "secret"
+  # sasl_username = ""
+  # sasl_password = ""
 
-  ## Optional SASL:
-  ## one of: OAUTHBEARER, PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, GSSAPI
-  ## (defaults to PLAIN)
+  ## Optional SASL, one of:
+  ##   OAUTHBEARER, PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, GSSAPI, AWS-MSK-IAM
   # sasl_mechanism = ""
 
   ## used if sasl_mechanism is GSSAPI
@@ -128,7 +139,19 @@ to use them.
   ## used if sasl_mechanism is OAUTHBEARER
   # sasl_access_token = ""
 
-  ## SASL protocol version.  When connecting to Azure EventHub set to 0.
+  ## used if sasl_mechanism is AWS-MSK-IAM
+  # sasl_aws_msk_iam_region = ""
+  ## for profile based auth
+  ## sasl_aws_msk_iam_profile = ""
+  ## for role based auth
+  ## sasl_aws_msk_iam_role = ""
+  ## sasl_aws_msk_iam_session = ""
+
+  ## Arbitrary key value string pairs to pass as a TOML table. For example:
+  ## {logicalCluster = "cluster-042", poolId = "pool-027"}
+  # sasl_extensions = {}
+
+  ## SASL protocol version. When connecting to Azure EventHub set to 0.
   # sasl_version = 1
 
   # Disable Kafka metadata full fetch
@@ -211,11 +234,8 @@ to use them.
   ## Each data format has its own unique set of configuration options, read
   ## more about them here:
   ## https://github.com/influxdata/telegraf/blob/master/docs/DATA_FORMATS_INPUT.md
-  data_format = "influx"
+  # data_format = "influx"
 ```
-
-[kafka]: https://kafka.apache.org
-[input data formats]: /docs/DATA_FORMATS_INPUT.md
 
 ## Metrics
 

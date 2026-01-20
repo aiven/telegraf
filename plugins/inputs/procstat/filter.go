@@ -139,8 +139,8 @@ func (f *filter) applyFilter() ([]processGroup, error) {
 		for _, p := range g.processes {
 			// Users
 			if f.filterUser != nil {
-				if username, err := p.Username(); err != nil || !f.filterUser.Match(username) {
-					// Errors can happen if we don't have permissions or the process no longer exists
+				if username := username(p); username == "" || !f.filterUser.Match(username) {
+					// This can happen if we don't have permissions or the process no longer exists
 					continue
 				}
 			}
@@ -202,9 +202,11 @@ func (f *filter) applyFilter() ([]processGroup, error) {
 					tags[k] = v
 				}
 				tags["parent_pid"] = strconv.FormatInt(int64(p.Pid), 10)
+
 				children = append(children, processGroup{
 					processes: c,
 					tags:      tags,
+					level:     depth + 1,
 				})
 			}
 		}

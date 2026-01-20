@@ -1,25 +1,28 @@
 # Starlark Processor Plugin
 
-The `starlark` processor calls a Starlark function for each matched metric,
+This plugin calls the provided Starlark function for each matched metric,
 allowing for custom programmatic metric processing.
 
 The Starlark language is a dialect of Python, and will be familiar to those who
 have experience with the Python language. However, there are major
-[differences](#python-differences).  Existing Python code is unlikely to work
-unmodified.  The execution environment is sandboxed, and it is not possible to
+[differences](#python-differences). Existing Python code is unlikely to work
+unmodified. The execution environment is sandboxed, and it is not possible to
 do I/O operations such as reading from files or sockets.
 
-The **[Starlark specification][]** has details about the syntax and available
-functions.
+The **[Starlark specification][spec]** has details about the syntax and
+available functions.
 
-Telegraf minimum version: Telegraf 1.15.0
+⭐ Telegraf v1.15.0
+🏷️ general purpose
+💻 all
+
+[spec]: https://github.com/google/starlark-go/blob/d1966c6b9fcd/doc/spec.md
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -61,7 +64,7 @@ def apply(metric):
 ```
 
 For a list of available types and functions that can be used in the code, see
-the [Starlark specification][].
+the [Starlark specification][spec].
 
 In addition to these, the following InfluxDB-specific
 types and functions are exposed to the script.
@@ -71,7 +74,7 @@ Create a new metric with the given measurement name.  The metric will have no
 tags or fields and defaults to the current time.
 
 - **name**:
-The name is a [string][] containing the metric measurement name.
+The name is a [string][string] containing the metric measurement name.
 
 - **tags**:
 A [dict-like][dict] object containing the metric's tags.
@@ -119,12 +122,30 @@ While Starlark is similar to Python, there are important differences to note:
 The ability to load external scripts other than your own is pretty limited. The
 following libraries are available for loading:
 
-- json: `load("json.star", "json")` provides the following functions: `json.encode()`, `json.decode()`, `json.indent()`. See [json.star](testdata/json.star) for an example. For more details about the functions, please refer to [the documentation of this library](https://pkg.go.dev/go.starlark.net/lib/json).
-- log: `load("logging.star", "log")` provides the following functions: `log.debug()`, `log.info()`, `log.warn()`, `log.error()`. See [logging.star](testdata/logging.star) for an example.
-- math: `load("math.star", "math")` provides [the following functions and constants](https://pkg.go.dev/go.starlark.net/lib/math). See [math.star](testdata/math.star) for an example.
-- time: `load("time.star", "time")` provides the following functions: `time.from_timestamp()`, `time.is_valid_timezone()`, `time.now()`, `time.parse_duration()`, `time.parse_time()`, `time.time()`. See [time_date.star](testdata/time_date.star), [time_duration.star](testdata/time_duration.star) and/or [time_timestamp.star](testdata/time_timestamp.star) for an example. For more details about the functions, please refer to [the documentation of this library](https://pkg.go.dev/go.starlark.net/lib/time).
+- json: `load("json.star", "json")` provides the functions `json.encode()`,
+        `json.decode()`, `json.indent()`. See [json.star](testdata/json.star)
+        for an example. For more details about the functions, please refer to the
+        [library documentation][json_lib].
+- log:  `load("logging.star", "log")` provides the functions `log.debug()`,
+        `log.info()`, `log.warn()`, `log.error()`. See
+         [logging.star](testdata/logging.star) for an example.
+- math: `load("math.star", "math")` provides the function
+         [documented in the library][math_lib]. See
+         [math.star](testdata/math.star) for an example.
+- time: `load("time.star", "time")` provides the functions `time.from_timestamp()`,
+        `time.is_valid_timezone()`, `time.now()`, `time.parse_duration()`,
+        `time.parse_time()`, `time.time()`. See
+         [time_date.star](testdata/time_date.star),
+         [time_duration.star](testdata/time_duration.star) and
+         [time_timestamp.star](testdata/time_timestamp.star) for examples. For
+         more details about the functions, please refer to the
+         [library documentation][time_lib].
 
 If you would like to see support for something else here, please open an issue.
+
+[json_lib]: https://pkg.go.dev/go.starlark.net/lib/json
+[math_lib]: https://pkg.go.dev/go.starlark.net/lib/math
+[time_lib]: https://pkg.go.dev/go.starlark.net/lib/time
 
 ### Common Questions
 
@@ -259,33 +280,35 @@ or return the value as a floating-point number.
 
 ### Examples
 
-- [drop string fields](testdata/drop_string_fields.star) - Drop fields containing string values.
-- [drop fields with unexpected type](testdata/drop_fields_with_unexpected_type.star) - Drop fields containing unexpected value types.
-- [iops](testdata/iops.star) - obtain IOPS (to aggregate, to produce max_iops)
-- [json](testdata/json.star) - an example of processing JSON from a field in a metric
-- [math](testdata/math.star) - Use a math function to compute the value of a field. [The list of the supported math functions and constants](https://pkg.go.dev/go.starlark.net/lib/math).
-- [number logic](testdata/number_logic.star) - transform a numerical value to another numerical value
-- [pivot](testdata/pivot.star) - Pivots a key's value to be the key for another key.
-- [ratio](testdata/ratio.star) - Compute the ratio of two integer fields
-- [rename](testdata/rename.star) - Rename tags or fields using a name mapping.
-- [scale](testdata/scale.star) - Multiply any field by a number
-- [time date](testdata/time_date.star) - Parse a date and extract the year, month and day from it.
-- [time duration](testdata/time_duration.star) - Parse a duration and convert it into a total amount of seconds.
-- [time timestamp](testdata/time_timestamp.star) - Filter metrics based on the timestamp in seconds.
-- [time timestamp nanoseconds](testdata/time_timestamp_nanos.star) - Filter metrics based on the timestamp with nanoseconds.
-- [time timestamp current](testdata/time_set_timestamp.star) - Setting the metric timestamp to the current/local time.
-- [value filter](testdata/value_filter.star) - Remove a metric based on a field value.
-- [logging](testdata/logging.star) - Log messages with the logger of Telegraf
-- [multiple metrics](testdata/multiple_metrics.star) - Return multiple metrics by using [a list](https://docs.bazel.build/versions/master/skylark/lib/list.html) of metrics.
-- [multiple metrics from json array](testdata/multiple_metrics_with_json.star) - Builds a new metric from each element of a json array then returns all the created metrics.
-- [custom error](testdata/fail.star) - Return a custom error with [fail](https://docs.bazel.build/versions/master/skylark/lib/globals.html#fail).
-- [compare with previous metric](testdata/compare_metrics.star) - Compare the current metric with the previous one using the shared state.
-- [rename prometheus remote write](testdata/rename_prometheus_remote_write.star) - Rename prometheus remote write measurement name with fieldname and rename fieldname to value.
+- [drop fields containing string values](testdata/drop_string_fields.star)
+- [drop fields with unexpected types](testdata/drop_fields_with_unexpected_type.star)
+- [obtain IOPS for aggregation and computing max IOPS)](testdata/iops.star)
+- [process JSON in a metric field](testdata/json.star) - see
+  [library documentation][json_lib] for function documentation
+- [use math function to compute a field value](testdata/math.star) - see
+  [library documentation][math_lib] for function documentation
+- [transform numerical values](testdata/number_logic.star)
+- [pivot a key's value to be the key for another field](testdata/pivot.star)
+- [compute the ratio of two integer fields](testdata/ratio.star)
+- [rename tags or fields using a name mapping](testdata/rename.star)
+- [scale field values](testdata/scale.star)
+- [parse date and extract year, month and day](testdata/time_date.star) - see
+  [library documentation][time_lib] for function documentation
+- [parse duration and convert into seconds](testdata/time_duration.star)
+- [filter metrics based on timestamp in seconds](testdata/time_timestamp.star)
+- [filter metrics based on the timestamp with nanoseconds](testdata/time_timestamp_nanos.star)
+- [setting metric timestamp to current/local time](testdata/time_set_timestamp.star)
+- [filter metric based on field value](testdata/value_filter.star)
+- [log messages with Telegraf logger](testdata/logging.star)
+- [return multiple metrics using a list](testdata/multiple_metrics.star)
+- [return multiple metrics from JSON array](testdata/multiple_metrics_with_json.star)
+- [return custom error using `fail`](testdata/fail.star)
+- [compare metric with previous metric using a shared state](testdata/compare_metrics.star)
+- [rename prometheus remote-write measurement name](testdata/rename_prometheus_remote_write.star)
 
 [All examples](testdata) are in the testdata folder.
 
 Open a Pull Request to add any other useful Starlark examples.
 
-[Starlark specification]: https://github.com/google/starlark-go/blob/d1966c6b9fcd/doc/spec.md
 [string]: https://github.com/google/starlark-go/blob/d1966c6b9fcd/doc/spec.md#strings
 [dict]: https://github.com/google/starlark-go/blob/d1966c6b9fcd/doc/spec.md#dictionaries

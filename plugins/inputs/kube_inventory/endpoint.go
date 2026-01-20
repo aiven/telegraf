@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 
 	"github.com/influxdata/telegraf"
 )
@@ -20,9 +20,9 @@ func collectEndpoints(ctx context.Context, acc telegraf.Accumulator, ki *Kuberne
 	}
 }
 
-func gatherEndpoint(e corev1.Endpoints, acc telegraf.Accumulator) {
-	creationTs := e.GetCreationTimestamp()
-	if creationTs.IsZero() {
+func gatherEndpoint(e discoveryv1.EndpointSlice, acc telegraf.Accumulator) {
+	creationTS := e.GetCreationTimestamp()
+	if creationTS.IsZero() {
 		return
 	}
 
@@ -36,46 +36,32 @@ func gatherEndpoint(e corev1.Endpoints, acc telegraf.Accumulator) {
 		"namespace":     e.Namespace,
 	}
 
-	for _, endpoint := range e.Subsets {
-		for _, readyAddr := range endpoint.Addresses {
+	for _, endpoint := range e.Endpoints {
+		if endpoint.Conditions.Ready == nil {
 			fields["ready"] = true
-
-			tags["hostname"] = readyAddr.Hostname
-			if readyAddr.NodeName != nil {
-				tags["node_name"] = *readyAddr.NodeName
-			}
-			if readyAddr.TargetRef != nil {
-				tags[strings.ToLower(readyAddr.TargetRef.Kind)] = readyAddr.TargetRef.Name
-			}
-
-			for _, port := range endpoint.Ports {
-				fields["port"] = port.Port
-
-				tags["port_name"] = port.Name
-				tags["port_protocol"] = string(port.Protocol)
-
-				acc.AddFields(endpointMeasurement, fields, tags)
-			}
+		} else {
+			fields["ready"] = *endpoint.Conditions.Ready
 		}
-		for _, notReadyAddr := range endpoint.NotReadyAddresses {
-			fields["ready"] = false
 
-			tags["hostname"] = notReadyAddr.Hostname
-			if notReadyAddr.NodeName != nil {
-				tags["node_name"] = *notReadyAddr.NodeName
+		if endpoint.Hostname != nil {
+			tags["hostname"] = *endpoint.Hostname
+		}
+		if endpoint.NodeName != nil {
+			tags["node_name"] = *endpoint.NodeName
+		}
+		if endpoint.TargetRef != nil {
+			tags[strings.ToLower(endpoint.TargetRef.Kind)] = endpoint.TargetRef.Name
+		}
+
+		for _, port := range e.Ports {
+			if port.Port != nil {
+				fields["port"] = *port.Port
 			}
-			if notReadyAddr.TargetRef != nil {
-				tags[strings.ToLower(notReadyAddr.TargetRef.Kind)] = notReadyAddr.TargetRef.Name
-			}
 
-			for _, port := range endpoint.Ports {
-				fields["port"] = port.Port
+			tags["port_name"] = *port.Name
+			tags["port_protocol"] = string(*port.Protocol)
 
-				tags["port_name"] = port.Name
-				tags["port_protocol"] = string(port.Protocol)
-
-				acc.AddFields(endpointMeasurement, fields, tags)
-			}
+			acc.AddFields(endpointMeasurement, fields, tags)
 		}
 	}
 }

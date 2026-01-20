@@ -1,13 +1,22 @@
 # PowerDNS Input Plugin
 
-The powerdns plugin gathers metrics about PowerDNS using unix socket.
+This plugin gathers metrics from [PowerDNS][powerdns] servers using unix
+sockets.
+
+> [!NOTE]
+> This plugin will need access to the powerdns control socket.
+
+⭐ Telegraf v0.10.2
+🏷️ server
+💻 all
+
+[powerdns]: https://www.powerdns.com/
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

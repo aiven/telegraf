@@ -33,6 +33,7 @@ var sampleConfig string
 // Stackdriver is the Google Stackdriver config info.
 type Stackdriver struct {
 	Project              string            `toml:"project"`
+	QuotaProject         string            `toml:"quota_project"`
 	Namespace            string            `toml:"namespace"`
 	ResourceType         string            `toml:"resource_type"`
 	ResourceLabels       map[string]string `toml:"resource_labels"`
@@ -136,9 +137,19 @@ func (s *Stackdriver) Connect() error {
 
 	s.ResourceLabels["project_id"] = s.Project
 
+	// Define client options, starting with the user agent
+	options := []option.ClientOption{
+		option.WithUserAgent(internal.ProductToken()),
+	}
+
+	if s.QuotaProject != "" {
+		options = append(options, option.WithQuotaProject(s.QuotaProject))
+		s.Log.Infof("Using QuotaProject %s for quota attribution", s.QuotaProject)
+	}
+
 	if s.client == nil {
 		ctx := context.Background()
-		client, err := monitoring.NewMetricClient(ctx, option.WithUserAgent(internal.ProductToken()))
+		client, err := monitoring.NewMetricClient(ctx, options...)
 		if err != nil {
 			return err
 		}
@@ -185,7 +196,6 @@ func (tsb timeSeriesBuckets) Add(m telegraf.Metric, f []*telegraf.Field, ts *mon
 	tsb[k] = s
 }
 
-// Split metrics up by timestamp and send to Google Cloud Stackdriver
 func (s *Stackdriver) Write(metrics []telegraf.Metric) error {
 	metricBatch := make(map[int64][]telegraf.Metric)
 	timestamps := make([]int64, 0, len(metrics))

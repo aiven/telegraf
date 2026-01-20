@@ -1,23 +1,22 @@
 # Nginx Upstream Check Input Plugin
 
-Read the status output of the [nginx_upstream_check][1].  This module can
-periodically check the servers in the Nginx's upstream with configured request
-and interval to determine if the server is still available. If checks are failed
-the server is marked as "down" and will not receive any requests until the check
-will pass and a server will be marked as "up" again.
+This plugin gathers metrics from the [Nginx web server][nginx] using the
+[upstream check module][upstream_check_module]. This module periodically sends
+the configured requests to servers in the Nginx's upstream determining their
+availability.
 
-The status page displays the current status of all upstreams and servers as well
-as number of the failed and successful checks. This information can be exported
-in JSON format and parsed by this input.
+⭐ Telegraf v1.10.0
+🏷️ server, web
+💻 all
 
-[1]: https://github.com/yaoweibin/nginx_upstream_check_module
+[nginx]: https://www.nginx.com
+[upstream_check_module]: https://github.com/yaoweibin/nginx_upstream_check_module
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -29,6 +28,8 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## An URL where Nginx Upstream check module is enabled
   ## It should be set to return a JSON formatted response
   url = "http://127.0.0.1/status?format=json"
+  ## You can also point it at a unix socket too
+  # url = "http+unix:///var/run/nginx.sock:/status?format=json"
 
   ## HTTP method
   # method = "GET"

@@ -1,17 +1,27 @@
 # Nginx Plus API Input Plugin
 
-Nginx Plus is a commercial version of the open source web server Nginx. The use
-this plugin you will need a license. For more information about the differences
-between Nginx (F/OSS) and Nginx Plus, see the Nginx [documentation][diff-doc].
+This plugin gathers metrics from the commercial
+[Nginx Plus web server][nginx_plus] via the [REST API][api].
 
-[diff-doc]: https://www.nginx.com/blog/whats-difference-nginx-foss-nginx-plus/
+> [!NOTE]
+> Using this plugin requires a license.
+
+For more information about differences between Nginx (F/OSS) and Nginx Plus, see
+the Nginx [documentation][diff_doc].
+
+⭐ Telegraf v1.9.0
+🏷️ server, web
+💻 all
+
+[nginx_plus]: https://www.f5.com/products/nginx/nginx-plus
+[api]: https://demo.nginx.com/swagger-ui/
+[diff_doc]: https://www.nginx.com/blog/whats-difference-nginx-foss-nginx-plus/
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -21,7 +31,7 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 # Read Nginx Plus API advanced status information
 [[inputs.nginx_plus_api]]
   ## An array of Nginx API URIs to gather stats.
-  urls = ["http://localhost/api"]
+  urls = ["http://localhost/api", "http+unix:///var/run/nginx.sock:/api"]
   # Nginx API version, default: 3
   # api_version = 3
 
@@ -222,7 +232,9 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   - source
   - port
 
-- nginx_plus_api_http_server_zones, nginx_plus_api_upstream_server_zones, nginx_plus_api_http_location_zones, nginx_plus_api_resolver_zones, nginx_plus_api_slabs_pages
+- nginx_plus_api_http_server_zones, nginx_plus_api_upstream_server_zones,
+  nginx_plus_api_http_location_zones, nginx_plus_api_resolver_zones,
+  nginx_plus_api_slabs_pages
   - source
   - port
   - zone

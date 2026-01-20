@@ -1,20 +1,25 @@
-# Zookeeper Input Plugin
+# Apache Zookeeper Input Plugin
 
-The zookeeper plugin collects variables outputted from the 'mntr' command
-[Zookeeper Admin](https://zookeeper.apache.org/doc/current/zookeeperAdmin.html).
+This plugin collects variables from [Zookeeper][zookeeper] instances using the
+[`mntr` command][admin_guide].
 
-If in Zookeper, the Prometheus Metric provider is enabled, instead use the
-`prometheus` input plugin. By default, the Prometheus metrics are exposed at
-`http://<ip>:7000/metrics` URL. Using the `prometheus` input plugin provides a
-native solution to read and process Prometheus metrics, while this plugin is
-specific to using `mntr` to collect the Java Properties format.
+> [!NOTE]
+> If the Prometheus Metric provider is enabled in Zookeeper use the
+> [prometheus plugin][prometheus] instead with `http://<ip>:7000/metrics`.
+
+⭐ Telegraf v0.2.0
+🏷️ applications
+💻 all
+
+[zookeeper]: https://zookeeper.apache.org
+[admin_guide]: https://zookeeper.apache.org/doc/current/zookeeperAdmin.html#sc_zkCommands
+[prometheus]: /plugins/inputs/prometheus/README.md
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -40,12 +45,53 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   # parse_floats = "string"
 
   ## Optional TLS Config
-  # enable_tls = false
-  # tls_ca = "/etc/telegraf/ca.pem"
-  # tls_cert = "/etc/telegraf/cert.pem"
-  # tls_key = "/etc/telegraf/key.pem"
-  ## If false, skip chain & host verification
-  # insecure_skip_verify = true
+  ## Set to true/false to enforce TLS being enabled/disabled. If not set,
+  ## enable TLS only if any of the other options are specified.
+  # tls_enable =
+  ## Trusted root certificates for server
+  # tls_ca = "/path/to/cafile"
+  ## Used for TLS client certificate authentication
+  # tls_cert = "/path/to/certfile"
+  ## Used for TLS client certificate authentication
+  # tls_key = "/path/to/keyfile"
+  ## Password for the key file if it is encrypted
+  # tls_key_pwd = ""
+  ## Send the specified TLS server name via SNI
+  # tls_server_name = "kubernetes.example.com"
+  ## Minimal TLS version to accept by the client
+  # tls_min_version = "TLS12"
+  ## List of ciphers to accept, by default all secure ciphers will be accepted
+  ## See https://pkg.go.dev/crypto/tls#pkg-constants for supported values.
+  ## Use "all", "secure" and "insecure" to add all support ciphers, secure
+  ## suites or insecure suites respectively.
+  # tls_cipher_suites = ["secure"]
+  ## Renegotiation method, "never", "once" or "freely"
+  # tls_renegotiation_method = "never"
+  ## Use TLS but skip chain & host verification
+  # insecure_skip_verify = false
+```
+
+## Troubleshooting
+
+If you have any issues please check the direct Zookeeper output using netcat:
+
+```sh
+$ echo mntr | nc localhost 2181
+zk_version      3.4.9-3--1, built on Thu, 01 Jun 2017 16:26:44 -0700
+zk_avg_latency  0
+zk_max_latency  0
+zk_min_latency  0
+zk_packets_received     8
+zk_packets_sent 7
+zk_num_alive_connections        1
+zk_outstanding_requests 0
+zk_server_state standalone
+zk_znode_count  129
+zk_watch_count  0
+zk_ephemerals_count     0
+zk_approximate_data_size        10044
+zk_open_file_descriptor_count   44
+zk_max_file_descriptor_count    4096
 ```
 
 ## Metrics
@@ -76,29 +122,6 @@ configuration, platform, and version.
     - followers (integer, leader only)
     - synced_followers (integer, leader only)
     - pending_syncs (integer, leader only)
-
-## Debugging
-
-If you have any issues please check the direct Zookeeper output using netcat:
-
-```sh
-$ echo mntr | nc localhost 2181
-zk_version      3.4.9-3--1, built on Thu, 01 Jun 2017 16:26:44 -0700
-zk_avg_latency  0
-zk_max_latency  0
-zk_min_latency  0
-zk_packets_received     8
-zk_packets_sent 7
-zk_num_alive_connections        1
-zk_outstanding_requests 0
-zk_server_state standalone
-zk_znode_count  129
-zk_watch_count  0
-zk_ephemerals_count     0
-zk_approximate_data_size        10044
-zk_open_file_descriptor_count   44
-zk_max_file_descriptor_count    4096
-```
 
 ## Example Output
 

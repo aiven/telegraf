@@ -1,14 +1,18 @@
 # Unbound Input Plugin
 
-This plugin gathers stats from [Unbound](https://www.unbound.net/) -
-a validating, recursive, and caching DNS resolver.
+This plugin gathers stats from an [Unbound][unbound] DNS resolver.
+
+⭐ Telegraf v1.5.0
+🏷️ server, network
+💻 all
+
+[unbound]: https://www.unbound.net
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -39,6 +43,9 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## true in a future version.  It is recommended to set to true on new
   ## deployments.
   thread_as_tag = false
+
+  ## Collect metrics with the histogram of the recursive query times:
+  # histogram = false
 ```
 
 ### Permissions
@@ -48,7 +55,7 @@ require additional permissions to execute successfully.  Depending on the
 user/group permissions of the telegraf user executing this plugin, you may need
 to alter the group membership, set facls, or use sudo.
 
-**Group membership (Recommended)**:
+#### Group membership (recommended)
 
 ```bash
 $ groups telegraf
@@ -60,7 +67,8 @@ $ groups telegraf
 telegraf : telegraf unbound
 ```
 
-**Sudo privileges**:
+#### Sudo privileges
+
 If you use this method, you will need the following in your telegraf config:
 
 ```toml
@@ -83,11 +91,11 @@ Please use the solution you see as most appropriate.
 ## Metrics
 
 This is the full list of stats provided by unbound-control and potentially
-collected depending of your unbound configuration.  Histogram related statistics
-will never be collected, extended statistics can also be imported
-("extended-statistics: yes" in unbound configuration).  In the output, the dots
-in the unbound-control stat name are replaced by underscores(see
-<https://www.unbound.net/documentation/unbound-control.html> for details).
+collected depending of your unbound configuration.  Extended statistics can also
+be imported ("extended-statistics: yes" in unbound configuration).  In the
+output, the dots in the unbound-control stat name are replaced by
+underscores(see <https://www.unbound.net/documentation/unbound-control.html> for
+details).
 
 Shown metrics are with `thread_as_tag` enabled.
 
@@ -161,6 +169,52 @@ Shown metrics are with `thread_as_tag` enabled.
     - requestlist_current_user
     - recursion_time_avg
     - recursion_time_median
+
+If `histogram` is set to true, the following metrics are also collected, with
+the field name indicating the lower bound of each histogram bin:
+
+- unbound:
+  - fields:
+    histogram_.000000
+    histogram_.000001
+    histogram_.000002
+    histogram_.000004
+    histogram_.000008
+    histogram_.000016
+    histogram_.000032
+    histogram_.000064
+    histogram_.000128
+    histogram_.000256
+    histogram_.000512
+    histogram_.001024
+    histogram_.002048
+    histogram_.004096
+    histogram_.008192
+    histogram_.016384
+    histogram_.032768
+    histogram_.065536
+    histogram_.131072
+    histogram_.262144
+    histogram_.524288
+    histogram_1.000000
+    histogram_2.000000
+    histogram_4.000000
+    histogram_8.000000
+    histogram_16.000000
+    histogram_32.000000
+    histogram_64.000000
+    histogram_128.000000
+    histogram_256.000000
+    histogram_512.000000
+    histogram_1024.000000
+    histogram_2048.000000
+    histogram_4096.000000
+    histogram_8192.000000
+    histogram_16384.000000
+    histogram_32768.000000
+    histogram_65536.000000
+    histogram_131072.000000
+    histogram_262144.000000
 
 ## Example Output
 

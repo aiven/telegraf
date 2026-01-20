@@ -1,18 +1,25 @@
-# Nginx Virtual Host Traffic (VTS) Input Plugin
+# Nginx Virtual Host Traffic Input Plugin
 
-This plugin gathers Nginx status using external virtual host traffic status
-module - <https://github.com/vozlt/nginx-module-vts>. This is an Nginx module
-that provides access to virtual host status information. It contains the current
-status such as servers, upstreams, caches. This is similar to the live activity
-monitoring of Nginx plus.  For module configuration details please see its
-[documentation](https://github.com/vozlt/nginx-module-vts#synopsis).
+This plugin gathers metrics from the [Nginx web server][nginx] using the
+[external virtual host traffic status module][vhts_module]. This module provides
+access to virtual host status information containing the current status of
+servers, upstreams and caches, similar to the live activity monitoring of
+Nginx plus. For module configuration details please see the
+[module documentation][module_doc].
+
+⭐ Telegraf v1.9.0
+🏷️ server, web
+💻 all
+
+[nginx]: https://www.nginx.com
+[vhts_module]: https://github.com/vozlt/nginx-module-vts
+[module_doc]: https://github.com/vozlt/nginx-module-vts#synopsis
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -22,7 +29,7 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 # Read Nginx virtual host traffic status module information (nginx-module-vts)
 [[inputs.nginx_vts]]
   ## An array of ngx_http_status_module or status URI to gather stats.
-  urls = ["http://localhost/status"]
+  urls = ["http://localhost/status", "http+unix:///var/run/nginx.sock:/status"]
 
   ## HTTP response timeout (default: 5s)
   response_timeout = "5s"

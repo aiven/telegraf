@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -31,6 +32,9 @@ var once sync.Once
 var (
 	ErrTimeout        = errors.New("command timed out")
 	ErrNotImplemented = errors.New("not implemented yet")
+
+	// Regexp for extracting the go version from runtime information
+	reGoVer = regexp.MustCompile(`go([^\s]+).*`)
 )
 
 // Set via LDFLAGS -X
@@ -70,8 +74,12 @@ func FormatFullVersion() string {
 
 // ProductToken returns a tag for Telegraf that can be used in user agents.
 func ProductToken() string {
-	return fmt.Sprintf("Telegraf/%s Go/%s",
-		Version, strings.TrimPrefix(runtime.Version(), "go"))
+	gover := strings.TrimPrefix(runtime.Version(), "go")
+	if g := reGoVer.FindStringSubmatch(runtime.Version()); len(g) == 2 {
+		gover = g[1]
+	}
+
+	return fmt.Sprintf("Telegraf/%s Go/%s", Version, gover)
 }
 
 // ReadLines reads contents from a file and splits them by new lines.
@@ -268,6 +276,14 @@ func ParseTimestamp(format string, timestamp interface{}, location *time.Locatio
 			sep = separator
 		}
 		return parseUnix(format, timestamp, sep)
+	case "timestamp_tz", "timestamp_tz_ms", "timestamp_tz_us", "timestamp_tz_ns":
+		fmtUnix := "unix" + strings.TrimPrefix(format, "timestamp_tz")
+		t, err := ParseTimestamp(fmtUnix, timestamp, location, separator...)
+		if err != nil {
+			return t, err
+		}
+		_, offset := t.In(location).Zone()
+		return t.Add(-time.Duration(offset) * time.Second), nil
 	default:
 		v, ok := timestamp.(string)
 		if !ok {

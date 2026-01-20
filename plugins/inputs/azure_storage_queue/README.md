@@ -11,10 +11,9 @@ service, storing a large numbers of messages.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -23,13 +22,11 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 ```toml @sample.conf
 # Gather Azure Storage Queue metrics
 [[inputs.azure_storage_queue]]
-  ## Required Azure Storage Account name
+  ## Azure Storage Account name and shared access key (required)
   account_name = "mystorageaccount"
-
-  ## Required Azure Storage Account access key
   account_key = "storageaccountaccesskey"
 
-  ## Set to false to disable peeking age of oldest message (executes faster)
+  ## Disable peeking age of oldest message (faster)
   # peek_oldest_message_age = true
 ```
 

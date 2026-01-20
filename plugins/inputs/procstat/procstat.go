@@ -54,7 +54,7 @@ type Procstat struct {
 	Log                    telegraf.Logger `toml:"-"`
 
 	finder    pidFinder
-	processes map[pid]process
+	processes map[string]map[pid]process
 	cfg       collectionConfig
 	oldMode   bool
 
@@ -76,6 +76,7 @@ type pidsTags struct {
 type processGroup struct {
 	processes []*gopsprocess.Process
 	tags      map[string]string
+	level     int
 }
 
 func (*Procstat) SampleConfig() string {
@@ -98,7 +99,7 @@ func (p *Procstat) Init() error {
 	p.cfg.tagging = make(map[string]bool, len(p.TagWith))
 	for _, tag := range p.TagWith {
 		switch tag {
-		case "cmdline", "pid", "ppid", "status", "user":
+		case "cmdline", "pid", "ppid", "status", "user", "child_level", "parent_pid", "level":
 		case "protocol", "state", "src", "src_port", "dest", "dest_port", "name": // socket only
 			if !slices.Contains(p.Properties, "sockets") {
 				return fmt.Errorf("socket tagging option %q specified without sockets enabled", tag)
@@ -203,7 +204,7 @@ func (p *Procstat) Init() error {
 	}
 
 	// Initialize the running process cache
-	p.processes = make(map[pid]process)
+	p.processes = make(map[string]map[pid]process)
 
 	return nil
 }
@@ -239,6 +240,13 @@ func (p *Procstat) gatherOld(acc telegraf.Accumulator) error {
 		return err
 	}
 
+	// Use empty string as filter key for old mode (single implicit filter)
+	const oldModeKey = ""
+	if p.processes[oldModeKey] == nil {
+		p.processes[oldModeKey] = make(map[pid]process)
+	}
+	procs := p.processes[oldModeKey]
+
 	var count int
 	running := make(map[pid]bool)
 	for _, r := range results {
@@ -258,7 +266,7 @@ func (p *Procstat) gatherOld(acc telegraf.Accumulator) error {
 
 			// Use the cached processes as we need the existing instances
 			// to compute delta-metrics (e.g. cpu-usage).
-			if cached, found := p.processes[pid]; found {
+			if cached, found := procs[pid]; found {
 				proc = cached
 			} else {
 				// We've found a process that was not recorded before so add it
@@ -277,7 +285,7 @@ func (p *Procstat) gatherOld(acc telegraf.Accumulator) error {
 				if p.ProcessName != "" {
 					proc.setTag("process_name", p.ProcessName)
 				}
-				p.processes[pid] = proc
+				procs[pid] = proc
 			}
 			running[pid] = true
 			metrics, err := proc.metrics(p.Prefix, &p.cfg, now)
@@ -293,9 +301,9 @@ func (p *Procstat) gatherOld(acc telegraf.Accumulator) error {
 	}
 
 	// Cleanup processes that are not running anymore
-	for pid := range p.processes {
+	for pid := range procs {
 		if !running[pid] {
-			delete(p.processes, pid)
+			delete(procs, pid)
 		}
 	}
 
@@ -324,7 +332,6 @@ func (p *Procstat) gatherOld(acc telegraf.Accumulator) error {
 
 func (p *Procstat) gatherNew(acc telegraf.Accumulator) error {
 	now := time.Now()
-	running := make(map[pid]bool)
 	for _, f := range p.Filter {
 		groups, err := f.applyFilter()
 		if err != nil {
@@ -346,19 +353,29 @@ func (p *Procstat) gatherNew(acc telegraf.Accumulator) error {
 			continue
 		}
 
+		// Initialize the process cache for this filter if needed
+		if p.processes[f.Name] == nil {
+			p.processes[f.Name] = make(map[pid]process)
+		}
+		filterProcs := p.processes[f.Name]
+
+		// Track running processes for this filter to clean up stale entries
+		running := make(map[pid]bool)
+
 		var count int
 		for _, g := range groups {
 			count += len(g.processes)
+			level := strconv.Itoa(g.level)
 			for _, gp := range g.processes {
 				// Skip over non-running processes
-				if running, err := gp.IsRunning(); err != nil || !running {
+				if isRunning, err := gp.IsRunning(); err != nil || !isRunning {
 					continue
 				}
 
 				// Use the cached processes as we need the existing instances
 				// to compute delta-metrics (e.g. cpu-usage).
 				pid := pid(gp.Pid)
-				process, found := p.processes[pid]
+				process, found := filterProcs[pid]
 				if !found {
 					//nolint:errcheck // Assumption: if a process has no name, it probably does not exist
 					if name, _ := gp.Name(); name == "" {
@@ -367,21 +384,24 @@ func (p *Procstat) gatherNew(acc telegraf.Accumulator) error {
 
 					// We've found a process that was not recorded before so add it
 					// to the list of processes
-					tags := make(map[string]string, len(g.tags)+1)
+					tags := make(map[string]string, len(g.tags)+2)
 					for k, v := range g.tags {
 						tags[k] = v
 					}
 					if p.ProcessName != "" {
-						process.setTag("process_name", p.ProcessName)
+						tags["process_name"] = p.ProcessName
 					}
 					tags["filter"] = f.Name
+					if p.cfg.tagging["level"] {
+						tags["level"] = level
+					}
 
 					process = &proc{
 						Process:     gp,
 						hasCPUTimes: false,
 						tags:        tags,
 					}
-					p.processes[pid] = process
+					filterProcs[pid] = process
 				}
 				running[pid] = true
 				metrics, err := process.metrics(p.Prefix, &p.cfg, now)
@@ -393,6 +413,30 @@ func (p *Procstat) gatherNew(acc telegraf.Accumulator) error {
 				for _, m := range metrics {
 					acc.AddMetric(m)
 				}
+			}
+			if p.cfg.tagging["level"] {
+				// Add lookup statistics-metric
+				acc.AddFields(
+					"procstat_lookup",
+					map[string]interface{}{
+						"pid_count":   len(g.processes),
+						"running":     len(running),
+						"result_code": 0,
+						"level":       g.level,
+					},
+					map[string]string{
+						"filter": f.Name,
+						"result": "success",
+					},
+					now,
+				)
+			}
+		}
+
+		// Cleanup processes that are not running anymore for this filter
+		for pid := range filterProcs {
+			if !running[pid] {
+				delete(filterProcs, pid)
 			}
 		}
 
@@ -412,12 +456,6 @@ func (p *Procstat) gatherNew(acc telegraf.Accumulator) error {
 		)
 	}
 
-	// Cleanup processes that are not running anymore across all filters/groups
-	for pid := range p.processes {
-		if !running[pid] {
-			delete(p.processes, pid)
-		}
-	}
 	return nil
 }
 

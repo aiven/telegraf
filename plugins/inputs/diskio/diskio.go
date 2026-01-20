@@ -12,8 +12,8 @@ import (
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/filter"
+	"github.com/influxdata/telegraf/plugins/common/psutil"
 	"github.com/influxdata/telegraf/plugins/inputs"
-	"github.com/influxdata/telegraf/plugins/inputs/system"
 )
 
 //go:embed sample.conf
@@ -30,7 +30,7 @@ type DiskIO struct {
 	SkipSerialNumber bool            `toml:"skip_serial_number"`
 	Log              telegraf.Logger `toml:"-"`
 
-	ps                system.PS
+	ps                psutil.PS
 	infoCache         map[string]diskInfoCache
 	deviceFilter      filter.Filter
 	warnDiskName      map[string]bool
@@ -127,16 +127,25 @@ func (d *DiskIO) Gather(acc telegraf.Accumulator) error {
 			"merged_writes":    io.MergedWriteCount,
 		}
 		if lastValue, exists := d.lastIOCounterStat[k]; exists {
-			deltaRWCount := float64(io.ReadCount + io.WriteCount - lastValue.ReadCount - lastValue.WriteCount)
-			deltaRWTime := float64(io.ReadTime + io.WriteTime - lastValue.ReadTime - lastValue.WriteTime)
-			deltaIOTime := float64(io.IoTime - lastValue.IoTime)
-			if deltaRWCount > 0 {
-				fields["io_await"] = deltaRWTime / deltaRWCount
-				fields["io_svctm"] = deltaIOTime / deltaRWCount
-			}
-			itv := float64(collectTime.Sub(d.lastCollectTime).Milliseconds())
-			if itv > 0 {
-				fields["io_util"] = 100 * deltaIOTime / itv
+			// Check for wrap around
+			wrap := io.ReadCount < lastValue.ReadCount || io.WriteCount < lastValue.WriteCount
+			wrap = wrap || io.ReadTime < lastValue.ReadTime || io.WriteTime < lastValue.WriteTime
+			wrap = wrap || io.IoTime < lastValue.IoTime
+
+			if !wrap {
+				deltaRWCount := float64(io.ReadCount-lastValue.ReadCount) + float64(io.WriteCount-lastValue.WriteCount)
+				deltaRWTime := float64(io.ReadTime-lastValue.ReadTime) + float64(io.WriteTime-lastValue.WriteTime)
+				deltaIOTime := float64(io.IoTime - lastValue.IoTime)
+
+				if deltaRWCount > 0 {
+					fields["io_await"] = deltaRWTime / deltaRWCount
+					fields["io_svctm"] = deltaIOTime / deltaRWCount
+				}
+
+				itv := float64(collectTime.Sub(d.lastCollectTime).Milliseconds())
+				if itv > 0 {
+					fields["io_util"] = 100 * deltaIOTime / itv
+				}
 			}
 		}
 		acc.AddCounter("diskio", fields, tags)
@@ -218,7 +227,7 @@ func (d *DiskIO) diskTags(devName string) map[string]string {
 }
 
 func init() {
-	ps := system.NewSystemPS()
+	ps := psutil.NewSystemPS()
 	inputs.Add("diskio", func() telegraf.Input {
 		return &DiskIO{ps: ps, SkipSerialNumber: true}
 	})

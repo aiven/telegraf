@@ -42,6 +42,7 @@ type Mysql struct {
 	PerfEventsStatementsDigestTextLimit int64            `toml:"perf_events_statements_digest_text_limit"`
 	PerfEventsStatementsLimit           int64            `toml:"perf_events_statements_limit"`
 	PerfEventsStatementsTimeLimit       int64            `toml:"perf_events_statements_time_limit"`
+	AggregateTableIOWaits               bool             `toml:"aggregate_table_io_waits"`
 	TableSchemaDatabases                []string         `toml:"table_schema_databases"`
 	GatherProcessList                   bool             `toml:"gather_process_list"`
 	GatherUserStatistics                bool             `toml:"gather_user_statistics"`
@@ -298,6 +299,22 @@ const (
         FROM performance_schema.table_io_waits_summary_by_table
         WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema')
     `
+	perfTableIOWaitsAggregateQuery = `
+        SELECT
+            OBJECT_SCHEMA,
+            OBJECT_SCHEMA AS OBJECT_NAME,
+            SUM(COUNT_FETCH) AS COUNT_FETCH,
+            SUM(COUNT_INSERT) AS COUNT_INSERT,
+            SUM(COUNT_UPDATE) AS COUNT_UPDATE,
+            SUM(COUNT_DELETE) AS COUNT_DELETE,
+            SUM(SUM_TIMER_FETCH) AS SUM_TIMER_FETCH,
+            SUM(SUM_TIMER_INSERT) AS SUM_TIMER_INSERT,
+            SUM(SUM_TIMER_UPDATE) AS SUM_TIMER_UPDATE,
+            SUM(SUM_TIMER_DELETE) AS SUM_TIMER_DELETE
+        FROM performance_schema.table_io_waits_summary_by_table
+        WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema')
+        GROUP BY OBJECT_SCHEMA
+    `
 	perfIndexIOWaitsQuery = `
         SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME,
         COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE, COUNT_DELETE,
@@ -510,7 +527,7 @@ func (m *Mysql) gatherServer(server *config.Secret, acc telegraf.Accumulator) er
 	}
 
 	if m.GatherTableIOWaits {
-		err = gatherPerfTableIOWaits(db, servtag, acc)
+		err = m.gatherPerfTableIOWaits(db, servtag, acc)
 		if err != nil {
 			return err
 		}
@@ -1175,8 +1192,15 @@ func getColSlice(rows *sql.Rows) ([]interface{}, error) {
 }
 
 // gatherPerfTableIOWaits can be used to get total count and time of I/O wait event for each table and process
-func gatherPerfTableIOWaits(db *sql.DB, servtag string, acc telegraf.Accumulator) error {
-	rows, err := db.Query(perfTableIOWaitsQuery)
+// of I/O wait event for each table and process
+func (m *Mysql) gatherPerfTableIOWaits(db *sql.DB, servtag string, acc telegraf.Accumulator) error {
+	var queryStr string
+	if m.AggregateTableIOWaits {
+		queryStr = perfTableIOWaitsAggregateQuery
+	} else {
+		queryStr = perfTableIOWaitsQuery
+	}
+	rows, err := db.Query(queryStr)
 	if err != nil {
 		return err
 	}
@@ -1362,8 +1386,6 @@ func (m *Mysql) gatherInnoDBMetrics(db *sql.DB, servtag string, acc telegraf.Acc
 // gatherPerfSummaryPerAccountPerEvent can be used to fetch enabled metrics from
 // performance_schema.events_statements_summary_by_account_by_event_name
 func (m *Mysql) gatherPerfSummaryPerAccountPerEvent(db *sql.DB, servtag string, acc telegraf.Accumulator) error {
-	sqlQuery := perfSummaryPerAccountPerEvent
-
 	var rows *sql.Rows
 	var err error
 
@@ -1400,17 +1422,19 @@ func (m *Mysql) gatherPerfSummaryPerAccountPerEvent(db *sql.DB, servtag string, 
 	var events []interface{}
 	// if we have perf_summary_events set - select only listed events (adding filter criteria for rows)
 	if len(m.PerfSummaryEvents) > 0 {
-		sqlQuery += " WHERE EVENT_NAME IN ("
+		var sqlQueryBuilder strings.Builder
+		sqlQueryBuilder.WriteString(perfSummaryPerAccountPerEvent)
+		sqlQueryBuilder.WriteString(" WHERE EVENT_NAME IN (")
 		for i, eventName := range m.PerfSummaryEvents {
 			if i > 0 {
-				sqlQuery += ", "
+				sqlQueryBuilder.WriteString(", ")
 			}
-			sqlQuery += "?"
+			sqlQueryBuilder.WriteString("?")
 			events = append(events, eventName)
 		}
-		sqlQuery += ")"
+		sqlQueryBuilder.WriteString(")")
 
-		rows, err = db.Query(sqlQuery, events...)
+		rows, err = db.Query(sqlQueryBuilder.String(), events...)
 	} else {
 		// otherwise no filter, hence, select all rows
 		rows, err = db.Query(perfSummaryPerAccountPerEvent)

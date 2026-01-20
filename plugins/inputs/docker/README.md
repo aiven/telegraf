@@ -1,11 +1,11 @@
 # Docker Input Plugin
 
 This plugin uses the [Docker Engine API][api] to gather metrics on running
-docker containers.
+Docker containers.
 
 > [!NOTE]
-> Please make sure Telegraf has sufficient permissions to access the configured
-> endpoint!
+> Make sure Telegraf has sufficient permissions to access the configured
+> endpoint.
 
 ⭐ Telegraf v0.1.9
 🏷️ containers
@@ -15,10 +15,9 @@ docker containers.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -37,11 +36,6 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## configuring in multiple Swarm managers results in duplication of metrics.
   gather_services = false
 
-  ## Only collect metrics for these containers. Values will be appended to
-  ## container_name_include.
-  ## Deprecated (1.4.0), use container_name_include
-  container_names = []
-
   ## Set the source tag for the metrics to the container ID hostname, eg first 12 chars
   source_tag = false
 
@@ -57,22 +51,26 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   # container_state_exclude = []
 
   ## Objects to include for disk usage query
-  ## Allowed values are "container", "image", "volume" 
+  ## Allowed values are "container", "image", "volume"
   ## When empty disk usage is excluded
   storage_objects = []
 
   ## Timeout for docker list, info, and stats commands
   timeout = "5s"
 
+  ## Podman compatibility settings (auto-enabled when Podman detected)
+  ## Cache TTL for accurate CPU percentage calculation (default: 60s)
+  ## Set higher than your collection interval for accurate measurements
+  ## Set to 0 to keep cache entries forever (not recommended for dynamic environments)
+  # podman_cache_ttl = "60s"
+
   ## Specifies for which classes a per-device metric should be issued
   ## Possible values are 'cpu' (cpu0, cpu1, ...), 'blkio' (8:0, 8:1, ...) and 'network' (eth0, eth1, ...)
-  ## Please note that this setting has no effect if 'perdevice' is set to 'true'
   # perdevice_include = ["cpu"]
 
-  ## Specifies for which classes a total metric should be issued. Total is an aggregated of the 'perdevice' values.
+  ## Specifies for which classes a total metric should be issued. Total is an aggregated of the 'perdevice_include' values.
   ## Possible values are 'cpu', 'blkio' and 'network'
   ## Total 'cpu' is reported directly by Docker daemon, and 'network' and 'blkio' totals are aggregated by this plugin.
-  ## Please note that this setting has no effect if 'total' is set to 'false'
   # total_include = ["cpu", "blkio", "network"]
 
   ## docker labels to include and exclude as tags.  Globs accepted.
@@ -105,6 +103,17 @@ could result in an attacker gaining root access to a machine. This is especially
 relevant if the telegraf configuration can be changed by untrusted users.
 
 [4]: https://docs.docker.com/engine/security/security/#docker-daemon-attack-surface
+
+### Podman Compatibility
+
+This plugin is compatible with Podman through its Docker-compatible API.
+When connected to Podman:
+
+- The plugin automatically detects Podman by examining the server version and
+  endpoint
+- Uses an intelligent caching mechanism to calculate accurate CPU percentages
+- Configure Podman socket endpoint, for example:
+  `endpoint = "unix:///run/podman/podman.sock"`
 
 ### Docker Daemon Permissions
 

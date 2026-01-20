@@ -24,10 +24,9 @@ Additionally, the plugin is able to query [cluster][cluster_stats],
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -67,6 +66,11 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
   ## Gather stats from the enrich API
   # enrich_stats = false
+  ## Set ccr_stats to true when you want to obtain cross cluster replication stats.
+  ccr_stats = false
+
+  ## Only gather ccr_stats from the master node. To work this require local = true
+  ccr_stats_only_from_master = true
 
   ## Indices to collect; can be one or more indices names or _all
   ## Use of wildcards is allowed. Use a wildcard at the end to retrieve index

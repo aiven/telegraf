@@ -45,11 +45,10 @@ var info = system.Info{
 				Secure:   true,
 			},
 		}, InsecureRegistryCIDRs: []*registry.NetIPNet{{IP: []byte{127, 0, 0, 0}, Mask: []byte{255, 0, 0, 0}}}, Mirrors: make([]string, 0)},
-	OperatingSystem:  "Linux Mint LMDE (containerized)",
-	BridgeNfIptables: true,
-	HTTPSProxy:       "",
-	Labels:           make([]string, 0),
-	MemoryLimit:      false,
+	OperatingSystem: "Linux Mint LMDE (containerized)",
+	HTTPSProxy:      "",
+	Labels:          make([]string, 0),
+	MemoryLimit:     false,
 	DriverStatus: [][2]string{
 		{"Pool Name", "docker-8:1-1182287-pool"},
 		{"Base Device Size", "10.74 GB"},
@@ -70,18 +69,17 @@ var info = system.Info{
 		{"Library Version", "1.02.115 (2016-01-25)"},
 		{"Thin Pool Minimum Free Space", "10.74GB"},
 	},
-	NFd:               19,
-	HTTPProxy:         "",
-	Driver:            "devicemapper",
-	NGoroutines:       39,
-	NCPU:              4,
-	DockerRootDir:     "/var/lib/docker",
-	NoProxy:           "",
-	BridgeNfIP6tables: true,
-	ServerVersion:     "17.09.0-ce",
+	NFd:           19,
+	HTTPProxy:     "",
+	Driver:        "devicemapper",
+	NGoroutines:   39,
+	NCPU:          4,
+	DockerRootDir: "/var/lib/docker",
+	NoProxy:       "",
+	ServerVersion: "17.09.0-ce",
 }
 
-var containerList = []types.Container{
+var containerList = []container.Summary{
 	{
 		ID:      "e2173b9478a6ae55e237d4d74f8bbb753f0817192b5081334dc78476296b7dfb",
 		Names:   []string{"/etcd"},
@@ -89,7 +87,7 @@ var containerList = []types.Container{
 		Command: "/etcd -name etcd0 -advertise-client-urls http://localhost:2379 -listen-client-urls http://0.0.0.0:2379",
 		Created: 1455941930,
 		Status:  "Up 4 hours",
-		Ports: []types.Port{
+		Ports: []container.Port{
 			{
 				PrivatePort: 7001,
 				PublicPort:  0,
@@ -126,7 +124,7 @@ var containerList = []types.Container{
 		Command: "/etcd -name etcd2 -advertise-client-urls http://localhost:2379 -listen-client-urls http://0.0.0.0:2379",
 		Created: 1455941933,
 		Status:  "Up 4 hours",
-		Ports: []types.Port{
+		Ports: []container.Port{
 			{
 				PrivatePort: 7002,
 				PublicPort:  0,
@@ -539,8 +537,8 @@ func containerStatsWindows() container.StatsResponseReader {
 	return stat
 }
 
-func containerInspect() types.ContainerJSON {
-	return types.ContainerJSON{
+func containerInspect() container.InspectResponse {
+	return container.InspectResponse{
 		Config: &container.Config{
 			Env: []string{
 				"ENVVAR1=loremipsum",
@@ -554,9 +552,9 @@ func containerInspect() types.ContainerJSON {
 				"PATH=/bin:/sbin",
 			},
 		},
-		ContainerJSONBase: &types.ContainerJSONBase{
-			State: &types.ContainerState{
-				Health: &types.Health{
+		ContainerJSONBase: &container.ContainerJSONBase{
+			State: &container.State{
+				Health: &container.Health{
 					FailingStreak: 1,
 					Status:        "Unhealthy",
 				},
@@ -573,7 +571,7 @@ func containerInspect() types.ContainerJSON {
 
 var diskUsage = types.DiskUsage{
 	LayersSize: 1e10,
-	Containers: []*types.Container{
+	Containers: []*container.Summary{
 		{Names: []string{"/some_container"}, Image: "some_image:1.0.0-alpine", SizeRw: 0, SizeRootFs: 123456789},
 	},
 	Images: []*image.Summary{

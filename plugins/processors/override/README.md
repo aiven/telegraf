@@ -1,31 +1,26 @@
 # Override Processor Plugin
 
-The override processor plugin allows overriding all modifications that are
-supported by input plugins and aggregators:
-
-* name_override
-* name_prefix
-* name_suffix
-* tags
-
-All metrics passing through this processor will be modified accordingly.  Select
-the metrics to modify using the standard [metric
-filtering](../../../docs/CONFIGURATION.md#metric-filtering) options.
-
-Values of *name_override*, *name_prefix*, *name_suffix* and already present
-*tags* with conflicting keys will be overwritten. Absent *tags* will be
-created.
-
-Use-case of this plugin encompass ensuring certain tags or naming conventions
+This plugin allows to modify metrics using [metric modifiers][modifiers].
+Use-cases of this plugin encompass ensuring certain tags or naming conventions
 are adhered to irrespective of input plugin configurations, e.g. by
 `taginclude`.
 
+> [!NOTE]
+> [Metric filtering][filtering] options apply to both the clone and the
+> original metric.
+
+⭐ Telegraf v1.6.0
+🏷️ transformation
+💻 all
+
+[modifiers]: /docs/CONFIGURATION.md#modifiers
+[filtering]: /docs/CONFIGURATION.md#metric-filtering
+
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

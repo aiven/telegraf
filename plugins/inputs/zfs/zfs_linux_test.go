@@ -4,10 +4,15 @@ package zfs
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/config"
+	"github.com/influxdata/telegraf/plugins/inputs"
+	"github.com/influxdata/telegraf/plugins/parsers/influx"
 	"github.com/influxdata/telegraf/testutil"
 )
 
@@ -220,12 +225,9 @@ scatter_sg_table_retry          4    99221
 `
 
 func TestZfsPoolMetrics(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "telegraf-zfs-pool")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
-
+	tmpDir := t.TempDir()
 	testKstatPath := tmpDir + "/telegraf/proc/spl/kstat/zfs"
-	err = os.MkdirAll(testKstatPath, 0750)
+	err := os.MkdirAll(testKstatPath, 0750)
 	require.NoError(t, err)
 
 	err = os.MkdirAll(testKstatPath+"/HOME", 0750)
@@ -279,12 +281,10 @@ func TestZfsPoolMetrics(t *testing.T) {
 }
 
 func TestZfsGeneratesMetrics(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "telegraf-zfs-generates")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	testKstatPath := tmpDir + "/telegraf/proc/spl/kstat/zfs"
-	err = os.MkdirAll(testKstatPath, 0750)
+	err := os.MkdirAll(testKstatPath, 0750)
 	require.NoError(t, err)
 
 	err = os.MkdirAll(testKstatPath, 0750)
@@ -324,8 +324,8 @@ func TestZfsGeneratesMetrics(t *testing.T) {
 	}
 
 	z := &Zfs{KstatPath: testKstatPath}
-	err = z.Gather(&acc)
-	require.NoError(t, err)
+	require.NoError(t, z.Init())
+	require.NoError(t, z.Gather(&acc))
 
 	acc.AssertContainsTaggedFields(t, "zfs", intMetrics, tags)
 	acc.Metrics = nil
@@ -342,6 +342,7 @@ func TestZfsGeneratesMetrics(t *testing.T) {
 	}
 
 	z = &Zfs{KstatPath: testKstatPath}
+	require.NoError(t, z.Init())
 	acc2 := testutil.Accumulator{}
 	err = z.Gather(&acc2)
 	require.NoError(t, err)
@@ -353,6 +354,7 @@ func TestZfsGeneratesMetrics(t *testing.T) {
 
 	// two pools, one metric
 	z = &Zfs{KstatPath: testKstatPath, KstatMetrics: []string{"arcstats"}}
+	require.NoError(t, z.Init())
 	acc3 := testutil.Accumulator{}
 	err = z.Gather(&acc3)
 	require.NoError(t, err)
@@ -392,6 +394,74 @@ func TestGetTags(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tags := getTags(tc.pools)
 			require.Equal(t, tc.expected, tags)
+		})
+	}
+}
+
+func TestDefaults(t *testing.T) {
+	expectedPath := "/proc/spl/kstat/zfs"
+	expectedMetrics := []string{
+		"abdstats", "arcstats", "dnodestats", "dbufcachestats",
+		"dmu_tx", "fm", "vdev_mirror_stats", "zfetchstats", "zil",
+	}
+
+	plugin := &Zfs{}
+	require.NoError(t, plugin.Init())
+	require.Equal(t, expectedPath, plugin.KstatPath)
+	require.ElementsMatch(t, expectedMetrics, plugin.KstatMetrics)
+}
+
+func TestInvalidKstatMetric(t *testing.T) {
+	plugin := &Zfs{
+		KstatMetrics: []string{"foo"},
+	}
+	require.ErrorContains(t, plugin.Init(), "invalid kstat metric")
+}
+
+func TestCases(t *testing.T) {
+	// Get all testcase directories
+	testpath := filepath.Join("testcases", "linux")
+	folders, err := os.ReadDir(testpath)
+	require.NoError(t, err)
+
+	// Register the plugin
+	inputs.Add("zfs", func() telegraf.Input { return &Zfs{} })
+
+	for _, f := range folders {
+		// Only handle folders
+		if !f.IsDir() {
+			continue
+		}
+
+		t.Run(f.Name(), func(t *testing.T) {
+			testcasePath := filepath.Join(testpath, f.Name())
+			configFilename := filepath.Join(testcasePath, "telegraf.conf")
+			expectedFilename := filepath.Join(testcasePath, "expected.out")
+			procPath := filepath.Join(testcasePath, "zfs") // contents of /proc/spl/kstat/zfs
+
+			// Read the expected output
+			parser := &influx.Parser{}
+			require.NoError(t, parser.Init())
+			expected, err := testutil.ParseMetricsFromFile(expectedFilename, parser)
+			require.NoError(t, err)
+
+			// Configure the plugin
+			cfg := config.NewConfig()
+			require.NoError(t, cfg.LoadConfig(configFilename))
+			require.Len(t, cfg.Inputs, 1)
+
+			// Setup the plugin
+			plugin := cfg.Inputs[0].Input.(*Zfs)
+			plugin.KstatPath = procPath
+			plugin.Log = testutil.Logger{}
+			require.NoError(t, plugin.Init())
+
+			// Gather and test
+			var acc testutil.Accumulator
+			require.NoError(t, plugin.Gather(&acc))
+
+			actual := acc.GetTelegrafMetrics()
+			testutil.RequireMetricsEqual(t, expected, actual, testutil.IgnoreTime())
 		})
 	}
 }

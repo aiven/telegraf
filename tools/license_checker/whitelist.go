@@ -19,7 +19,7 @@ type whitelistEntry struct {
 	License  string
 }
 
-var re = regexp.MustCompile(`^([<=>]+\s*)?([-\.\/\w]+)(@v[\d\.]+)?\s+([-\.\w]+)$`)
+var re = regexp.MustCompile(`^([<=>]+\s*)?([-\.\/\w]+)(@v[\d\.]+)?\s+([-\.,\w]+)$`)
 
 func (w *whitelist) Parse(filename string) error {
 	file, err := os.Open(filename)
@@ -106,7 +106,7 @@ func (w *whitelist) Check(pkg, version, spdx string) (ok, found bool) {
 		case "<=":
 			match = pkgver.LessThan(*entry.Version) || pkgver.Equal(*entry.Version)
 		case ">":
-			match = !(pkgver.LessThan(*entry.Version) || pkgver.Equal(*entry.Version))
+			match = !pkgver.LessThan(*entry.Version) && !pkgver.Equal(*entry.Version)
 		case ">=":
 			match = !pkgver.LessThan(*entry.Version)
 		}

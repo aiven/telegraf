@@ -1,34 +1,28 @@
 # Defaults Processor Plugin
 
-The _Defaults_ processor allows you to ensure certain fields will always exist
-with a specified default value on your metric(s).
+This plugin allows to specify default values for fields and tags for cases
+where the tag or field does not exist or has an empty value.
 
-There are three cases where this processor will insert a configured default
-field.
-
-1. The field is nil on the incoming metric
-1. The field is not nil, but its value is an empty string.
-1. The field is not nil, but its value is a string of one or more empty spaces.
-
-Telegraf minimum version: Telegraf 1.15.0
+⭐ Telegraf v1.15.0
+🏷️ transformation
+💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
 ## Configuration
 
 ```toml @sample.conf
-## Set default fields on your metric(s) when they are nil or empty
+## Set default fields and tags on your metric(s) when they are nil or empty
 [[processors.defaults]]
-  ## Ensures a set of fields always exists on your metric(s) with their
+  ## Ensures a set of fields or tags always exists on your metric(s) with their
   ## respective default value.
-  ## For any given field pair (key = default), if it's not set, a field
+  ## For any given field/tag pair (key = default), if it's not set, a field/tag
   ## is set on the metric with the specified default.
   ##
   ## A field is considered not set if it is nil on the incoming metric;
@@ -39,6 +33,12 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
     field_1 = "bar"
     time_idle = 0
     is_error = true
+  ## A tag is considered not set if it is nil on the incoming metric;
+  ## or it is not nil but it is empty string or a string of one or
+  ## more spaces.
+  ## <target-tag> = <value>
+  [processors.defaults.tags]
+    tag_1 = "foo"
 ```
 
 ## Example

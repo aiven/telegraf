@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 
@@ -107,7 +107,6 @@ func (ps *PubSub) Init() error {
 	return nil
 }
 
-// SetParser implements ParserInput interface.
 func (ps *PubSub) SetParser(parser telegraf.Parser) {
 	ps.parser = parser
 }
@@ -338,7 +337,7 @@ func (ps *PubSub) getGCPSubscription(subID string) (subscription, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := client.Subscription(subID)
+	s := client.Subscriber(subID)
 	s.ReceiveSettings = pubsub.ReceiveSettings{
 		NumGoroutines:          ps.MaxReceiverGoRoutines,
 		MaxExtension:           time.Duration(ps.MaxExtension),

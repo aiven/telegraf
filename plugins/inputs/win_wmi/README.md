@@ -1,21 +1,25 @@
 # Windows Management Instrumentation Input Plugin
 
-This document presents the input plugin to read WMI classes on Windows
-operating systems. With the win_wmi plugin, it is possible to
-capture and filter virtually any configuration or metric value exposed
-through the Windows Management Instrumentation ([WMI][WMIdoc])
-service. At minimum, the telegraf service user must have permission
-to [read][ACL] the WMI namespace that is being queried.
+This plugin queries information or invokes methods using
+[Windows Management Instrumentation][wmi] classes. This allows capturing and
+filtering virtually any configuration or metric value exposed through WMI.
 
+> [!NOTE]
+> The telegraf service user must have at least permission to [read][ACL] the
+> WMI namespace being queried.
+
+⭐ Telegraf v1.26.0
+🏷️ system
+💻 windows
+
+[wmi]: https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmi-start-page
 [ACL]: https://learn.microsoft.com/en-us/windows/win32/wmisdk/access-to-wmi-namespaces
-[WMIdoc]: https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmi-start-page
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -149,12 +153,6 @@ corresponds to executing
 Invoke-WmiMethod -Namespace "root\default" -Class "StdRegProv" -Name "GetStringValue" @(2147483650,"Software\Microsoft\windows NT\CurrentVersion", "ProductName")
 ```
 
-## Metrics
-
-By default, a WMI class property's value is used as a metric field. If a class
-property's value is specified in `tag_properties`, then the value is
-instead included with the metric as a tag.
-
 ## Troubleshooting
 
 ### Errors
@@ -184,6 +182,12 @@ be converted to integers:
   [processors.converter.fields]
     integer = ["Capacity", "FreeSpace"]
 ```
+
+## Metrics
+
+By default, a WMI class property's value is used as a metric field. If a class
+property's value is specified in `tag_properties`, then the value is
+instead included with the metric as a tag.
 
 ## Example Output
 

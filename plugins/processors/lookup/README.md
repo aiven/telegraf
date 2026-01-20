@@ -1,10 +1,10 @@
 # Lookup Processor Plugin
 
-The Lookup Processor allows to use one or more files containing a lookup-table
-for annotating incoming metrics. The lookup is _static_ as the files are only
-used on startup. The main use-case for this is to annotate metrics with
-additional tags e.g. dependent on their source. Multiple tags can be added
-depending on the lookup-table _files_.
+This plugin allows to use one or more files containing lookup-tables for
+annotating incoming metrics. The lookup is _static_ as the files are only used
+on startup. The main use-case for this is to annotate metrics with additional
+tags e.g. dependent on their source. Multiple tags can be added depending on the
+lookup-table _files_.
 
 The lookup key can be generated using a Golang template with the ability to
 access the metric name via `{{.Name}}`, the tag values via `{{.Tag "mytag"}}`,
@@ -14,15 +14,19 @@ in an empty string or `nil` respectively. In case the key cannot be found, the
 metric is passed-through unchanged. By default all matching tags are added and
 existing tag-values are overwritten.
 
-Please note: The plugin only supports the addition of tags and thus all mapped
-tag-values need to be strings!
+> [!NOTE]
+> The plugin only supports the addition of tags and thus all mapped
+> tag-values need to be strings!
+
+⭐ Telegraf v1.15.0
+🏷️ annotation
+💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -92,8 +96,8 @@ keyZ,tag-name1,tag-value1,...,tag-nameM,tag-valueM
 
 The formatting uses commas (`,`) as separators and allows for comments defined
 as lines starting with a hash (`#`). All lines can have different numbers but
-must at least contain three columns and follow the name/value pair format, i.e.
-there cannot be a name without value.
+must at least contain three columns and follow the name/value pair format.
+There cannot be a name without value.
 
 ### `csv_key_values` format
 

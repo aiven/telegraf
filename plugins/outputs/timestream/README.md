@@ -19,8 +19,12 @@ API endpoint. In the following order the plugin will attempt to authenticate.
 credentials are evaluated from subsequent rules). The `endpoint_url` attribute
 is used only for Timestream service. When fetching credentials, STS global
 endpoint will be used.
-1. Web identity provider credentials via STS if `role_arn` and `web_identity_token_file` are specified
-1. [Assumed credentials via STS][sts_credentials] if `role_arn` attribute is specified (source credentials are evaluated from subsequent rules). The `endpoint_url` attribute is used only for Timestream service. When fetching credentials, STS global endpoint will be used.
+1. Web identity provider credentials via STS if `role_arn` and
+   `web_identity_token_file` are specified
+1. [Assumed credentials via STS][sts_credentials] if `role_arn` attribute is
+   specified (source credentials are evaluated from subsequent rules). The
+   `endpoint_url` attribute is used only for Timestream service. When fetching
+   credentials, STS global endpoint will be used.
 1. Explicit credentials from `access_key`, `secret_key`, and `token` attributes
 1. Shared profile from `profile` attribute
 1. [Environment Variables][env_vars]
@@ -34,10 +38,9 @@ endpoint will be used.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

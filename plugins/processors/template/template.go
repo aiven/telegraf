@@ -16,7 +16,7 @@ import (
 //go:embed sample.conf
 var sampleConfig string
 
-type TemplateProcessor struct {
+type Template struct {
 	Tag      string          `toml:"tag"`
 	Template string          `toml:"template"`
 	Log      telegraf.Logger `toml:"-"`
@@ -25,45 +25,11 @@ type TemplateProcessor struct {
 	tmplValue *template.Template
 }
 
-func (*TemplateProcessor) SampleConfig() string {
+func (*Template) SampleConfig() string {
 	return sampleConfig
 }
 
-func (r *TemplateProcessor) Apply(in ...telegraf.Metric) []telegraf.Metric {
-	// for each metric in "in" array
-	for _, raw := range in {
-		m := raw
-		if wm, ok := raw.(telegraf.UnwrappableMetric); ok {
-			m = wm.Unwrap()
-		}
-		tm, ok := m.(telegraf.TemplateMetric)
-		if !ok {
-			r.Log.Errorf("metric of type %T is not a template metric", raw)
-			continue
-		}
-		newM := TemplateMetric{tm}
-
-		var b strings.Builder
-		if err := r.tmplTag.Execute(&b, &newM); err != nil {
-			r.Log.Errorf("failed to execute tag name template: %v", err)
-			continue
-		}
-		tag := b.String()
-
-		b.Reset()
-		if err := r.tmplValue.Execute(&b, &newM); err != nil {
-			r.Log.Errorf("failed to execute value template: %v", err)
-			continue
-		}
-		value := b.String()
-
-		raw.AddTag(tag, value)
-	}
-
-	return in
-}
-
-func (r *TemplateProcessor) Init() error {
+func (r *Template) Init() error {
 	var err error
 
 	r.tmplTag, err = template.New("tag template").Funcs(sprig.TxtFuncMap()).Parse(r.Tag)
@@ -78,8 +44,41 @@ func (r *TemplateProcessor) Init() error {
 	return nil
 }
 
+func (r *Template) Apply(in ...telegraf.Metric) []telegraf.Metric {
+	// for each metric in "in" array
+	for _, raw := range in {
+		m := raw
+		if wm, ok := raw.(telegraf.UnwrappableMetric); ok {
+			m = wm.Unwrap()
+		}
+		tm, ok := m.(telegraf.TemplateMetric)
+		if !ok {
+			r.Log.Errorf("metric of type %T is not a template metric", raw)
+			continue
+		}
+
+		var b strings.Builder
+		if err := r.tmplTag.Execute(&b, &tm); err != nil {
+			r.Log.Errorf("failed to execute tag name template: %v", err)
+			continue
+		}
+		tag := b.String()
+
+		b.Reset()
+		if err := r.tmplValue.Execute(&b, &tm); err != nil {
+			r.Log.Errorf("failed to execute value template: %v", err)
+			continue
+		}
+		value := b.String()
+
+		raw.AddTag(tag, value)
+	}
+
+	return in
+}
+
 func init() {
 	processors.Add("template", func() telegraf.Processor {
-		return &TemplateProcessor{}
+		return &Template{}
 	})
 }

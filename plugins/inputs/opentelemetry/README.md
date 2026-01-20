@@ -1,12 +1,26 @@
 # OpenTelemetry Input Plugin
 
-This plugin receives traces, metrics and logs from
-[OpenTelemetry](https://opentelemetry.io) clients and agents via gRPC.
+This service plugin receives traces, metrics, logs and profiles from
+[OpenTelemetry][opentelemetry] clients and compatible agents via gRPC.
+
+> [!NOTE]
+> Telegraf v1.32 through v1.35 support the Profiles signal using the v1
+> experimental API.
+> Telegraf v1.36 supports the Profiles signal using the v1 development API
+> before v0.1.0.
+> Telegraf v1.37+ supports the Profiles signal using the v1 development API
+> v0.2.0.
+
+⭐ Telegraf v1.19.0
+🏷️ logging, messaging
+💻 all
+
+[opentelemetry]: https://opentelemetry.io
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -16,10 +30,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

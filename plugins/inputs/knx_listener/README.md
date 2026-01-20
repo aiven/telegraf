@@ -1,14 +1,20 @@
 # KNX Input Plugin
 
-The KNX input plugin that listens for messages on the KNX home-automation bus.
-This plugin connects to the KNX bus via a KNX-IP interface.
-Information about supported KNX message datapoint types can be found at the
-underlying "knx-go" project site (<https://github.com/vapourismo/knx-go>).
+This service plugin listens for messages on the [KNX home-automation bus][knx]
+by connecting via a KNX-IP interface. Information about supported KNX
+datapoint-types can be found at the underlying [`knx-go` project][knxgo].
+
+⭐ Telegraf v1.19.0
+🏷️ iot
+💻 all
+
+[knx]: https://www.knx.org
+[knxgo]: https://github.com/vapourismo/knx-go
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -18,10 +24,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -57,7 +62,10 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 ### Related tools
 
-- [knx-telegraf-config-generator](https://github.com/svsool/knx-telegraf-config-generator) generates configuration from KNX project file
+- [knx-telegraf-config-generator][knx_config_generator]:  generates a Telegraf
+ configuration from a KNX project file
+
+[knx_config_generator]: https://github.com/svsool/knx-telegraf-config-generator
 
 ### Measurement configurations
 
@@ -66,7 +74,8 @@ addresses to this measurement. You can, for example group all temperature sensor
 messages within a "temperature" measurement. However, you are free to split
 messages of one datapoint-type to multiple measurements.
 
-**NOTE: You should not assign a group-address (GA) to multiple measurements!**
+> [!IMPORTANT]
+> You should not assign a group-address (GA) to multiple measurements!
 
 ## Metrics
 
@@ -74,9 +83,9 @@ Received KNX data is stored in the named measurement as configured above using
 the "value" field. Additional to the value, there are the following tags added
 to the datapoint:
 
-- "groupaddress": KNX group-address corresponding to the value
-- "unit":         unit of the value
-- "source":       KNX physical address sending the value
+- `groupaddress`: KNX group-address corresponding to the value
+- `unit`:         unit of the value
+- `source`:       KNX physical address sending the value
 
 To find out about the datatype of the datapoint please check your KNX project,
 the KNX-specification or the "knx-go" project for the corresponding DPT.

@@ -1,20 +1,25 @@
 # Zipkin Input Plugin
 
-This plugin implements the Zipkin http server to gather trace and timing data
-needed to troubleshoot latency problems in microservice architectures.
+This service plugin implements the [Zipkin][zipkin] HTTP server to gather trace
+and timing data needed to troubleshoot latency problems in microservice
+architectures.
 
-__Please Note:__ This plugin is experimental; Its data schema may be subject to
-change based on its main usage cases and the evolution of the OpenTracing
-standard.
+> [!CRITICAL]
+> This plugin produces high cardinality data, which when not controlled for will
+> cause high load on your database. Please make sure to [filter][filtering] the
+> produced metrics or configure your database to avoid cardinality issues!
 
-> [!IMPORTANT]
-> This plugin will create high cardinality data, so please take this into
-> account when sending data to your output!
+⭐ Telegraf v1.4.0
+🏷️ cloud
+💻 all
+
+[zipkin]: https://zipkin.io/
+[filtering]: /docs/CONFIGURATION.md#metric-filtering
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -24,10 +29,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -52,7 +56,7 @@ The plugin accepts spans in `JSON` or `thrift` if the `Content-Type` is
 `application/json` or `application/x-thrift`, respectively.  If `Content-Type`
 is not set, then the plugin assumes it is `JSON` format.
 
-## Tracing
+## Metrics
 
 This plugin uses Annotations tags and fields to track data from spans
 
@@ -75,7 +79,7 @@ This plugin uses Annotations tags and fields to track data from spans
   - `CR` (client receive) marks the end of the span, with the client receiving
     the response from server. RPC is considered complete with this annotation.
 
-## Metrics
+All metrics contain the following fields:
 
 - `duration_ns` the time in nanoseconds between the end and beginning of a span
 

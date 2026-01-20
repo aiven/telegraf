@@ -68,9 +68,6 @@ type Statsd struct {
 
 	// MetricSeparator is the separator between parts of the metric name.
 	MetricSeparator string `toml:"metric_separator"`
-	// This flag enables parsing of tags in the dogstatsd extension to the
-	// statsd protocol (http://docs.datadoghq.com/guides/dogstatsd/)
-	ParseDataDogTags bool `toml:"parse_data_dog_tags" deprecated:"1.10.0;1.35.0;use 'datadog_extensions' instead"`
 
 	// Parses extensions to statsd in the datadog statsd format
 	// currently supports metrics and datadog tags.
@@ -86,12 +83,6 @@ type Statsd struct {
 	// Requires the DataDogExtension flag to be enabled.
 	// https://docs.datadoghq.com/developers/dogstatsd/datagram_shell/?tab=metrics#dogstatsd-protocol-v12
 	DataDogKeepContainerTag bool `toml:"datadog_keep_container_tag"`
-
-	// UDPPacketSize is deprecated, it's only here for legacy support
-	// we now always create 1 max size buffer and then copy only what we need
-	// into the in channel
-	// see https://github.com/influxdata/telegraf/pull/992
-	UDPPacketSize int `toml:"udp_packet_size" deprecated:"0.12.1;1.35.0;option is ignored"`
 
 	ReadBufferSize      int              `toml:"read_buffer_size"`
 	SanitizeNamesMethod string           `toml:"sanitize_name_method"`
@@ -134,17 +125,16 @@ type Statsd struct {
 	TCPlistener *net.TCPListener
 
 	// track current connections so we can close them in Stop()
-	conns          map[string]*net.TCPConn
-	graphiteParser *graphite.Parser
-	acc            telegraf.Accumulator
-	bufPool        sync.Pool // pool of byte slices to handle parsing
+	conns   map[string]*net.TCPConn
+	acc     telegraf.Accumulator
+	bufPool sync.Pool // pool of byte slices to handle parsing
 
 	lastGatherTime time.Time
 
-	Stats InternalStats
+	Stats internalStats
 }
 
-type InternalStats struct {
+type internalStats struct {
 	// Internal statistics counters
 	MaxConnections     selfstat.Stat
 	CurrentConnections selfstat.Stat
@@ -162,6 +152,7 @@ type InternalStats struct {
 // number will get parsed as an int or float depending on what is passed
 type number float64
 
+// UnmarshalTOML is a custom TOML unmarshalling function for the number type.
 func (n *number) UnmarshalTOML(b []byte) error {
 	value, err := strconv.ParseFloat(string(b), 64)
 	if err != nil {
@@ -232,10 +223,6 @@ func (*Statsd) SampleConfig() string {
 }
 
 func (s *Statsd) Start(ac telegraf.Accumulator) error {
-	if s.ParseDataDogTags {
-		s.DataDogExtensions = true
-	}
-
 	s.acc = ac
 
 	// Make data structures
@@ -580,6 +567,10 @@ func (s *Statsd) udpListen(conn *net.UDPConn) error {
 // packet into statsd strings and then calls parseStatsdLine, which parses a
 // single statsd metric into a struct.
 func (s *Statsd) parser() error {
+	p, err := s.newGraphiteParser()
+	if err != nil {
+		return err
+	}
 	for {
 		select {
 		case <-s.done:
@@ -602,7 +593,7 @@ func (s *Statsd) parser() error {
 						s.Log.Debugf("  line was: %s", line)
 					}
 				default:
-					if err := s.parseStatsdLine(line); err != nil {
+					if err := s.parseStatsdLine(p, line); err != nil {
 						if !errors.Is(err, errParsing) {
 							// Ignore parsing errors but error out on
 							// everything else...
@@ -619,7 +610,7 @@ func (s *Statsd) parser() error {
 
 // parseStatsdLine will parse the given statsd line, validating it as it goes.
 // If the line is valid, it will be cached for the next call to Gather()
-func (s *Statsd) parseStatsdLine(line string) error {
+func (s *Statsd) parseStatsdLine(p *graphite.Parser, line string) error {
 	lineTags := make(map[string]string)
 	if s.DataDogExtensions {
 		recombinedSegments := make([]string, 0)
@@ -730,7 +721,7 @@ func (s *Statsd) parseStatsdLine(line string) error {
 		}
 
 		// Parse the name & tags from bucket
-		m.name, m.field, m.tags = s.parseName(m.bucket)
+		m.name, m.field, m.tags = s.parseName(p, m.bucket)
 		switch m.mtype {
 		case "c":
 			m.tags["metric_type"] = "counter"
@@ -778,9 +769,7 @@ func (s *Statsd) parseStatsdLine(line string) error {
 // config file. If there is a match, it will parse the name of the metric and
 // map of tags.
 // Return values are (<name>, <field>, <tags>)
-func (s *Statsd) parseName(bucket string) (name, field string, tags map[string]string) {
-	s.Lock()
-	defer s.Unlock()
+func (s *Statsd) parseName(p *graphite.Parser, bucket string) (name, field string, tags map[string]string) {
 	tags = make(map[string]string)
 
 	bucketparts := strings.Split(bucket, ",")
@@ -807,20 +796,9 @@ func (s *Statsd) parseName(bucket string) (name, field string, tags map[string]s
 		s.Log.Errorf("Unknown sanitizae name method: %s", s.SanitizeNamesMethod)
 	}
 
-	p := s.graphiteParser
-	var err error
-
-	if p == nil || s.graphiteParser.Separator != s.MetricSeparator {
-		p = &graphite.Parser{Separator: s.MetricSeparator, Templates: s.Templates}
-		err = p.Init()
-		s.graphiteParser = p
-	}
-
-	if err == nil {
-		p.DefaultTags = tags
-		//nolint:errcheck // unable to propagate
-		name, tags, field, _ = p.ApplyTemplate(name)
-	}
+	p.DefaultTags = tags
+	//nolint:errcheck // unable to propagate
+	name, tags, field, _ = p.ApplyTemplate(name)
 
 	if s.ConvertNames {
 		name = strings.ReplaceAll(name, ".", "_")
@@ -1074,6 +1052,17 @@ func (s *Statsd) expireCachedMetrics() {
 			delete(s.counters, key)
 		}
 	}
+}
+
+// newGraphiteParser initializes and returns a new graphite.Parser. graphite.Parser returned is not safe to be used in
+// multiple goroutines.
+func (s *Statsd) newGraphiteParser() (*graphite.Parser, error) {
+	p := &graphite.Parser{Separator: s.MetricSeparator, Templates: s.Templates}
+	err := p.Init()
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 func init() {

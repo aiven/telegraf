@@ -1,8 +1,11 @@
 package influxdb_v2_test
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -64,13 +67,15 @@ func TestInit(t *testing.T) {
 	}
 }
 
+var headerSecret = config.NewSecret([]byte("y"))
+
 func TestConnectFail(t *testing.T) {
 	tests := []*influxdb.InfluxDB{
 		{
 			URLs:      []string{"!@#$qwert"},
 			HTTPProxy: "http://localhost:8086",
-			HTTPHeaders: map[string]string{
-				"x": "y",
+			HTTPHeaders: map[string]*config.Secret{
+				"x": &headerSecret,
 			},
 		},
 
@@ -78,8 +83,8 @@ func TestConnectFail(t *testing.T) {
 
 			URLs:      []string{"http://localhost:1234"},
 			HTTPProxy: "!@#$%^&*()_+",
-			HTTPHeaders: map[string]string{
-				"x": "y",
+			HTTPHeaders: map[string]*config.Secret{
+				"x": &headerSecret,
 			},
 		},
 
@@ -87,8 +92,8 @@ func TestConnectFail(t *testing.T) {
 
 			URLs:      []string{"!@#$%^&*()_+"},
 			HTTPProxy: "http://localhost:8086",
-			HTTPHeaders: map[string]string{
-				"x": "y",
+			HTTPHeaders: map[string]*config.Secret{
+				"x": &headerSecret,
 			},
 		},
 
@@ -96,8 +101,8 @@ func TestConnectFail(t *testing.T) {
 
 			URLs:      []string{":::@#$qwert"},
 			HTTPProxy: "http://localhost:8086",
-			HTTPHeaders: map[string]string{
-				"x": "y",
+			HTTPHeaders: map[string]*config.Secret{
+				"x": &headerSecret,
 			},
 		},
 	}
@@ -115,8 +120,8 @@ func TestConnect(t *testing.T) {
 		{
 			URLs:      []string{"http://localhost:1234"},
 			HTTPProxy: "http://localhost:8086",
-			HTTPHeaders: map[string]string{
-				"x": "y",
+			HTTPHeaders: map[string]*config.Secret{
+				"x": &headerSecret,
 			},
 		},
 	}
@@ -209,6 +214,188 @@ func TestWrite(t *testing.T) {
 	}
 	require.NoError(t, plugin.Write(metrics))
 	require.NoError(t, plugin.Write(metrics))
+}
+
+func TestWriteWithPartialSerializationError(t *testing.T) {
+	expectedBody := "cpu,type=valid value=42.123 0\n"
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/v2/write":
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					t.Error(err)
+					return
+				}
+
+				if string(body) != expectedBody {
+					w.WriteHeader(http.StatusInternalServerError)
+					t.Errorf("'body' should contain %q", expectedBody)
+					return
+				}
+
+				w.WriteHeader(http.StatusNoContent)
+				return
+			default:
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:             []string{"http://" + ts.Listener.Addr().String()},
+		Bucket:           "telegraf",
+		ExcludeBucketTag: true,
+		ContentEncoding:  "identity",
+		PingTimeout:      config.Duration(15 * time.Second),
+		ReadIdleTimeout:  config.Duration(30 * time.Second),
+		Log:              &testutil.Logger{},
+	}
+	require.NoError(t, plugin.Init())
+	require.NoError(t, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := []telegraf.Metric{
+		// Metric which cannot be serialized
+		testutil.MustMetric(
+			"cpu",
+			map[string]string{
+				"type": "invalid",
+			},
+			map[string]interface{}{
+				"value": math.NaN,
+			},
+			time.Unix(0, 0),
+		),
+		// Valid metric
+		testutil.MustMetric(
+			"cpu",
+			map[string]string{
+				"type": "valid",
+			},
+			map[string]interface{}{
+				"value": 42.123,
+			},
+			time.Unix(0, 0),
+		),
+		// Metric which cannot be serialized
+		testutil.MustMetric(
+			"cpu",
+			map[string]string{
+				"type": "invalid",
+			},
+			map[string]interface{}{
+				"value": math.Inf,
+			},
+			time.Unix(0, 0),
+		),
+	}
+
+	// Writing should cause a partial write error where only the valid metric is
+	// accepted, all invalid metrics should be rejected.
+	err := plugin.Write(metrics)
+	require.ErrorIs(t, err, internal.ErrSerialization)
+	var werr *internal.PartialWriteError
+	require.ErrorAs(t, err, &werr)
+	require.ElementsMatch(t, werr.MetricsAccept, []int{1})
+	require.ElementsMatch(t, werr.MetricsReject, []int{0, 2})
+}
+
+func TestWriteWithPartialSerializationAndSendError(t *testing.T) {
+	expectedBody := "cpu,type=valid value=42.123 0\n"
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/v2/write":
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					t.Error(err)
+					return
+				}
+
+				if string(body) != expectedBody {
+					w.WriteHeader(http.StatusInternalServerError)
+					t.Errorf("'body' should contain %q", expectedBody)
+					return
+				}
+
+				w.WriteHeader(http.StatusTooManyRequests)
+				return
+			default:
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:             []string{"http://" + ts.Listener.Addr().String()},
+		Bucket:           "telegraf",
+		ExcludeBucketTag: true,
+		ContentEncoding:  "identity",
+		PingTimeout:      config.Duration(15 * time.Second),
+		ReadIdleTimeout:  config.Duration(30 * time.Second),
+		Log:              &testutil.Logger{},
+	}
+	require.NoError(t, plugin.Init())
+	require.NoError(t, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := []telegraf.Metric{
+		// Metric which cannot be serialized
+		testutil.MustMetric(
+			"cpu",
+			map[string]string{
+				"type": "invalid",
+			},
+			map[string]interface{}{
+				"value": math.NaN,
+			},
+			time.Unix(0, 0),
+		),
+		// Valid metric
+		testutil.MustMetric(
+			"cpu",
+			map[string]string{
+				"type": "valid",
+			},
+			map[string]interface{}{
+				"value": 42.123,
+			},
+			time.Unix(0, 0),
+		),
+		// Metric which cannot be serialized
+		testutil.MustMetric(
+			"cpu",
+			map[string]string{
+				"type": "invalid",
+			},
+			map[string]interface{}{
+				"value": math.Inf,
+			},
+			time.Unix(0, 0),
+		),
+	}
+
+	// Writing should cause a partial write error where no metric is accepted
+	// due to the sending error, all invalid metrics should be rejected.
+	// As the sending error is retryable the valid metric should neither be
+	// rejected not accepted to re-queue it in the next write.
+	err := plugin.Write(metrics)
+	require.ErrorContains(t, err, http.StatusText(http.StatusTooManyRequests))
+	var werr *internal.PartialWriteError
+	require.ErrorAs(t, err, &werr)
+	require.Empty(t, werr.MetricsAccept)
+	require.ElementsMatch(t, werr.MetricsReject, []int{0, 2})
 }
 
 func TestWriteBucketTagWorksOnRetry(t *testing.T) {
@@ -519,9 +706,10 @@ func TestStatusCodeNonRetryable4xx(t *testing.T) {
 
 			// Setup plugin and connect
 			plugin := &influxdb.InfluxDB{
-				URLs:      []string{"http://" + ts.Listener.Addr().String()},
-				BucketTag: "bucket",
-				Log:       &testutil.Logger{},
+				URLs:            []string{"http://" + ts.Listener.Addr().String()},
+				BucketTag:       "bucket",
+				ContentEncoding: "identity",
+				Log:             &testutil.Logger{},
 			}
 			require.NoError(t, plugin.Init())
 			require.NoError(t, plugin.Connect())
@@ -573,7 +761,7 @@ func TestStatusCodeNonRetryable4xx(t *testing.T) {
 
 			// Write the metrics the first time and check for the expected errors
 			err := plugin.Write(metrics)
-			require.ErrorContains(t, err, "failed to write metric to my_bucket (will be dropped:")
+			require.ErrorContains(t, err, "failed to write metrics to my_bucket (will be dropped:")
 
 			var apiErr *influxdb.APIError
 			require.ErrorAs(t, err, &apiErr)
@@ -665,7 +853,7 @@ func TestStatusCodeInvalidAuthentication(t *testing.T) {
 
 			// Write the metrics the first time and check for the expected errors
 			err := plugin.Write(metrics)
-			require.ErrorContains(t, err, "failed to write metric to my_bucket")
+			require.ErrorContains(t, err, "failed to write metrics to my_bucket")
 			require.ErrorContains(t, err, strconv.Itoa(code))
 
 			var writeErr *internal.PartialWriteError
@@ -706,9 +894,10 @@ func TestStatusCodeServiceUnavailable(t *testing.T) {
 
 			// Setup plugin and connect
 			plugin := &influxdb.InfluxDB{
-				URLs:      []string{"http://" + ts.Listener.Addr().String()},
-				BucketTag: "bucket",
-				Log:       &testutil.Logger{},
+				URLs:            []string{"http://" + ts.Listener.Addr().String()},
+				BucketTag:       "bucket",
+				ContentEncoding: "identity",
+				Log:             &testutil.Logger{},
 			}
 			require.NoError(t, plugin.Init())
 			require.NoError(t, plugin.Connect())
@@ -760,7 +949,7 @@ func TestStatusCodeServiceUnavailable(t *testing.T) {
 
 			// Write the metrics the first time and check for the expected errors
 			err := plugin.Write(metrics)
-			require.ErrorContains(t, err, "waiting 25ms for server (my_bucket) before sending metric again")
+			require.ErrorContains(t, err, http.StatusText(code))
 
 			var writeErr *internal.PartialWriteError
 			require.ErrorAs(t, err, &writeErr)
@@ -795,9 +984,10 @@ func TestStatusCodeUnexpected(t *testing.T) {
 
 			// Setup plugin and connect
 			plugin := &influxdb.InfluxDB{
-				URLs:      []string{"http://" + ts.Listener.Addr().String()},
-				BucketTag: "bucket",
-				Log:       &testutil.Logger{},
+				URLs:            []string{"http://" + ts.Listener.Addr().String()},
+				BucketTag:       "bucket",
+				ContentEncoding: "identity",
+				Log:             &testutil.Logger{},
 			}
 			require.NoError(t, plugin.Init())
 			require.NoError(t, plugin.Connect())
@@ -849,7 +1039,7 @@ func TestStatusCodeUnexpected(t *testing.T) {
 
 			// Write the metrics the first time and check for the expected errors
 			err := plugin.Write(metrics)
-			require.ErrorContains(t, err, "failed to write metric to bucket \"my_bucket\"")
+			require.ErrorContains(t, err, "failed to write metrics to bucket \"my_bucket\"")
 			require.ErrorContains(t, err, strconv.Itoa(code))
 
 			var writeErr *internal.PartialWriteError
@@ -858,4 +1048,514 @@ func TestStatusCodeUnexpected(t *testing.T) {
 			require.LessOrEqual(t, len(writeErr.MetricsAccept), 2, "accepted metrics")
 		})
 	}
+}
+
+func TestUseDynamicSecret(t *testing.T) {
+	token := "welcome"
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("Authorization") != "Token "+token {
+				w.WriteHeader(http.StatusForbidden)
+			} else {
+				w.WriteHeader(http.StatusNoContent)
+			}
+		}),
+	)
+	defer ts.Close()
+
+	secretToken := config.NewSecret([]byte("wrongtk"))
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:   []string{"http://" + ts.Listener.Addr().String()},
+		Log:    &testutil.Logger{},
+		Bucket: "my_bucket",
+		Token:  secretToken,
+	}
+	require.NoError(t, plugin.Init())
+	require.NoError(t, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := []telegraf.Metric{
+		metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": 0.0,
+			},
+			time.Unix(0, 3),
+		),
+	}
+	// Write the metrics the first time and check for the expected errors
+	err := plugin.Write(metrics)
+	require.ErrorContains(t, err, "failed to write metrics to my_bucket")
+	require.ErrorContains(t, err, strconv.Itoa(http.StatusForbidden))
+
+	require.NoError(t, secretToken.Set([]byte(token)))
+	require.NoError(t, plugin.Write(metrics))
+}
+
+func TestConcurrentWrites(t *testing.T) {
+	totalMetrics := 100001
+
+	var received atomic.Int32
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/v2/write":
+				reader, err := gzip.NewReader(r.Body)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					t.Error(err)
+					return
+				}
+				defer reader.Close()
+				body, err := io.ReadAll(reader)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					t.Error(err)
+					return
+				}
+				lineCount := bytes.Count(body, []byte("\n"))
+				if len(body) > 0 && body[len(body)-1] != '\n' {
+					lineCount++
+				}
+				received.Add(int32(lineCount))
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:             []string{"http://" + ts.Listener.Addr().String()},
+		Token:            config.NewSecret([]byte("sometoken")),
+		Bucket:           "my_bucket",
+		ConcurrentWrites: 4,
+		Log:              &testutil.Logger{},
+	}
+	require.NoError(t, plugin.Init())
+	require.NoError(t, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, totalMetrics)
+	for i := range totalMetrics {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+	require.NoError(t, plugin.Write(metrics))
+	require.Equal(t, int32(totalMetrics), received.Load(), "unexpected received metrics count")
+}
+
+func BenchmarkWrite1k(b *testing.B) {
+	batchsize := 1000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:   []string{"http://" + ts.Listener.Addr().String()},
+		Token:  config.NewSecret([]byte("sometoken")),
+		Bucket: "my_bucket",
+		Log:    &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
+}
+
+func BenchmarkWrite5k(b *testing.B) {
+	batchsize := 5000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:   []string{"http://" + ts.Listener.Addr().String()},
+		Token:  config.NewSecret([]byte("sometoken")),
+		Bucket: "my_bucket",
+		Log:    &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
+}
+
+func BenchmarkWrite10k(b *testing.B) {
+	batchsize := 10000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:   []string{"http://" + ts.Listener.Addr().String()},
+		Token:  config.NewSecret([]byte("sometoken")),
+		Bucket: "my_bucket",
+		Log:    &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
+}
+
+func BenchmarkWrite25k(b *testing.B) {
+	batchsize := 25000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:   []string{"http://" + ts.Listener.Addr().String()},
+		Token:  config.NewSecret([]byte("sometoken")),
+		Bucket: "my_bucket",
+		Log:    &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
+}
+
+func BenchmarkWrite50k(b *testing.B) {
+	batchsize := 50000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:   []string{"http://" + ts.Listener.Addr().String()},
+		Token:  config.NewSecret([]byte("sometoken")),
+		Bucket: "my_bucket",
+		Log:    &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
+}
+
+func BenchmarkWrite100k(b *testing.B) {
+	batchsize := 100000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:   []string{"http://" + ts.Listener.Addr().String()},
+		Token:  config.NewSecret([]byte("sometoken")),
+		Bucket: "my_bucket",
+		Log:    &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
+}
+
+func BenchmarkWriteConcurrent100k_4(b *testing.B) {
+	batchsize := 100000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:             []string{"http://" + ts.Listener.Addr().String()},
+		Token:            config.NewSecret([]byte("sometoken")),
+		Bucket:           "my_bucket",
+		ConcurrentWrites: 4,
+		Log:              &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
+}
+
+func BenchmarkWriteConcurrent100k_8(b *testing.B) {
+	batchsize := 100000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:             []string{"http://" + ts.Listener.Addr().String()},
+		Token:            config.NewSecret([]byte("sometoken")),
+		Bucket:           "my_bucket",
+		ConcurrentWrites: 8,
+		Log:              &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
+}
+
+func BenchmarkWriteConcurrent100k_16(b *testing.B) {
+	batchsize := 100000
+
+	// Setup a test server
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}),
+	)
+	defer ts.Close()
+
+	// Setup plugin and connect
+	plugin := &influxdb.InfluxDB{
+		URLs:             []string{"http://" + ts.Listener.Addr().String()},
+		Token:            config.NewSecret([]byte("sometoken")),
+		Bucket:           "my_bucket",
+		ConcurrentWrites: 16,
+		Log:              &testutil.Logger{},
+	}
+	require.NoError(b, plugin.Init())
+	require.NoError(b, plugin.Connect())
+	defer plugin.Close()
+
+	metrics := make([]telegraf.Metric, 0, batchsize)
+	for i := range batchsize {
+		metrics = append(metrics, metric.New(
+			"cpu",
+			map[string]string{
+				"bucket": "foo",
+			},
+			map[string]interface{}{
+				"value": float64(i),
+			},
+			time.Unix(0, 0),
+		))
+	}
+
+	// Benchmark the writing
+	b.ResetTimer()
+	for b.Loop() {
+		require.NoError(b, plugin.Write(metrics))
+	}
+	b.ReportMetric(float64(batchsize*b.N)/b.Elapsed().Seconds(), "metrics/s")
 }

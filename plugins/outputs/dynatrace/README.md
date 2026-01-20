@@ -94,17 +94,16 @@ The endpoint for the Dynatrace Metrics API v2 is
   api_token = "your API token here" // hard-coded for illustration only, should be read from environment
 ```
 
-You can learn more about how to use the Dynatrace API
-[here](https://docs.dynatrace.com/docs/shortlink/section-api).
+You can learn more about how to use the [Dynatrace API][api].
 
+[api]: https://docs.dynatrace.com/docs/shortlink/section-api
 [api-auth]: https://docs.dynatrace.com/docs/shortlink/api-authentication
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

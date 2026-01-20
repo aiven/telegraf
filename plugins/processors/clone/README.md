@@ -1,34 +1,25 @@
 # Clone Processor Plugin
 
-The clone processor plugin create a copy of each metric passing through it,
-preserving untouched the original metric and allowing modifications in the
-copied one.
+This plugin creates a copy of each metric passing through it, preserving the
+original metric and allowing modifications such as [metric modifiers][modifiers]
+in the copied metric.
 
-The modifications allowed are the ones supported by input plugins and
-aggregators:
+> [!NOTE]
+> [Metric filtering][filtering] options apply to both the clone and the
+> original metric.
 
-* name_override
-* name_prefix
-* name_suffix
-* tags
+⭐ Telegraf v1.13.0
+🏷️ transformation
+💻 all
 
-Select the metrics to modify using the standard [metric
-filtering](../../../docs/CONFIGURATION.md#metric-filtering) options. Filtering
-options apply to both the clone and the original.
-
-Values of *name_override*, *name_prefix*, *name_suffix* and already present
-*tags* with conflicting keys will be overwritten. Absent *tags* will be
-created.
-
-A typical use-case is gathering metrics once and cloning them to simulate
-having several hosts (modifying ``host`` tag).
+[modifiers]: /docs/CONFIGURATION.md#modifiers
+[filtering]: /docs/CONFIGURATION.md#metric-filtering
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

@@ -38,10 +38,9 @@ will be used.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -139,20 +138,6 @@ The streamname is used by the plugin to ensure that data is sent to the correct
 Kinesis stream. It is important to note that the stream *MUST* be pre-configured
 for this plugin to function correctly. If the stream does not exist the plugin
 will result in telegraf exiting with an exit code of 1.
-
-### partitionkey [DEPRECATED]
-
-This is used to group data within a stream. Currently this plugin only supports
-a single partitionkey.  Manually configuring different hosts, or groups of hosts
-with manually selected partitionkeys might be a workable solution to scale out.
-
-### use_random_partitionkey [DEPRECATED]
-
-When true a random UUID will be generated and used as the partitionkey when
-sending data to Kinesis. This allows data to evenly spread across multiple
-shards in the stream. Due to using a random partitionKey there can be no
-guarantee of ordering when consuming the data off the shards.  If true then the
-partitionkey option will be ignored.
 
 ### partition
 

@@ -12,6 +12,7 @@ import (
 	gopsprocess "github.com/shirou/gopsutil/v4/process"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/metric"
 )
 
@@ -112,8 +113,13 @@ func (p *proc) metrics(prefix string, cfg *collectionConfig, t time.Time) ([]tel
 	if rc, wc, err := collectTotalReadWrite(p); err == nil {
 		fields[prefix+"read_bytes"] = rc
 		fields[prefix+"write_bytes"] = wc
-		fields[prefix+"disk_read_bytes"] = io.ReadBytes
-		fields[prefix+"disk_write_bytes"] = io.WriteBytes
+		if runtime.GOOS == "linux" {
+			fields[prefix+"disk_read_bytes"] = io.DiskReadBytes
+			fields[prefix+"disk_write_bytes"] = io.DiskWriteBytes
+		} else {
+			fields[prefix+"disk_read_bytes"] = io.ReadBytes
+			fields[prefix+"disk_write_bytes"] = io.WriteBytes
+		}
 	}
 
 	createdAt, err := p.CreateTime() // returns epoch in ms
@@ -232,8 +238,7 @@ func (p *proc) metrics(prefix string, cfg *collectionConfig, t time.Time) ([]tel
 		}
 	}
 
-	user, err := p.Username()
-	if err == nil {
+	if user := username(p.Process); user != "" {
 		if cfg.tagging["user"] {
 			p.tags["user"] = user
 		} else {
@@ -353,8 +358,11 @@ func (p *proc) metrics(prefix string, cfg *collectionConfig, t time.Time) ([]tel
 					delete(fields, "src")
 				}
 				if cfg.tagging["src_port"] && fields["src_port"] != nil {
-					port := uint64(fields["src_port"].(uint16))
-					p.tags["src_port"] = strconv.FormatUint(port, 10)
+					port, err := internal.ToString(fields["src_port"])
+					if err != nil {
+						return metrics, fmt.Errorf("converting source port to tag failed: %w", err)
+					}
+					p.tags["src_port"] = port
 					delete(fields, "src_port")
 				}
 				if cfg.tagging["dest"] && fields["dest"] != nil {
@@ -362,8 +370,11 @@ func (p *proc) metrics(prefix string, cfg *collectionConfig, t time.Time) ([]tel
 					delete(fields, "dest")
 				}
 				if cfg.tagging["dest_port"] && fields["dest_port"] != nil {
-					port := uint64(fields["dest_port"].(uint16))
-					p.tags["dest_port"] = strconv.FormatUint(port, 10)
+					port, err := internal.ToString(fields["dest_port"])
+					if err != nil {
+						return metrics, fmt.Errorf("converting destination port to tag failed: %w", err)
+					}
+					p.tags["dest_port"] = port
 					delete(fields, "dest_port")
 				}
 				if cfg.tagging["name"] && fields["name"] != nil {

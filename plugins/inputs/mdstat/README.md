@@ -1,24 +1,23 @@
-# mdstat Input Plugin
+# MD RAID Statistics Input Plugin
 
-The mdstat plugin gathers statistics about any Linux MD RAID arrays configured
-on the host by reading /proc/mdstat. For a full list of available fields see
-the /proc/mdstat section of the [proc man page][man-proc].  For a better idea
-of what each field represents, see the [mdstat man page][man-mdstat].
+This plugin gathers statistics about any [Linux MD RAID arrays][mdraid]
+configured on the host by reading `/proc/mdstat`. For a full list of available
+fields see the `/proc/mdstat` section of the [proc man page][man_proc]. For
+details on the fields check the [mdstat wiki][mdstat_wiki].
 
-Stat collection based on Prometheus' [mdstat collection library][prom-lib].
+⭐ Telegraf v1.20.0
+🏷️ system
+💻 linux
 
-[man-proc]: http://man7.org/linux/man-pages/man5/proc.5.html
-
-[man-mdstat]: https://raid.wiki.kernel.org/index.php/Mdstat
-
-[prom-lib]: https://github.com/prometheus/procfs/blob/master/mdstat.go
+[mdraid]: https://docs.kernel.org/admin-guide/md.html
+[man_proc]: http://man7.org/linux/man-pages/man5/proc.5.html
+[mdstat_wiki]: https://raid.wiki.kernel.org/index.php/Mdstat
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -35,27 +34,25 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 ## Metrics
 
-- mdstat
-  - BlocksSynced (if the array is rebuilding/checking, this is the count of
-    blocks that have been scanned)
-  - BlocksSyncedFinishTime (the expected finish time of the rebuild scan,
-    listed in minutes remaining)
-  - BlocksSyncedPct (the percentage of the rebuild scan left)
-  - BlocksSyncedSpeed (the current speed the rebuild is running at, listed
-    in K/sec)
-  - BlocksTotal (the total count of blocks in the array)
-  - DisksActive (the number of disks that are currently considered healthy
-    in the array)
-  - DisksFailed (the current count of failed disks in the array)
-  - DisksSpare (the current count of "spare" disks in the array)
-  - DisksTotal (total count of disks in the array)
-
-## Tags
-
-- mdstat
-  - ActivityState (`active` or `inactive`)
-  - Devices (comma separated list of devices that make up the array)
-  - Name (name of the array)
+- `mdstat` metric
+  - tags:
+    - ActivityState (`active` or `inactive`)
+    - Devices (comma separated list of devices that make up the array)
+    - Name (name of the array)
+  - fields:
+    - BlocksSynced (if the array is rebuilding/checking, this is the count of
+      blocks that have been scanned)
+    - BlocksSyncedFinishTime (the expected finish time of the rebuild scan,
+      listed in minutes remaining)
+    - BlocksSyncedPct (the percentage of the rebuild scan left)
+    - BlocksSyncedSpeed (the current speed the rebuild is running at, listed
+      in K/sec)
+    - BlocksTotal (the total count of blocks in the array)
+    - DisksActive (the number of disks that are currently considered healthy
+      in the array)
+    - DisksFailed (the current count of failed disks in the array)
+    - DisksSpare (the current count of "spare" disks in the array)
+    - DisksTotal (total count of disks in the array)
 
 ## Example Output
 

@@ -1,31 +1,23 @@
 # OpenNTPD Input Plugin
 
-Get standard NTP query metrics from [OpenNTPD][] using the ntpctl command.
+This plugin gathers metrics from [OpenNTPD][openntpd] using the `ntpctl`
+command.
 
-[OpenNTPD]: http://www.openntpd.org/
+> [!NOTE]
+> The `ntpctl` binary must be present on the system and executable by Telegraf.
+> The plugin supports using `sudo` for execution.
 
-Below is the documentation of the various headers returned from the NTP query
-command when running `ntpctl -s peers`.
+⭐ Telegraf v1.12.0
+🏷️ server, network
+💻 all
 
-- remote – The remote peer or server being synced to.
-- wt – the peer weight
-- tl – the peer trust level
-- st (stratum) – The remote peer or server Stratum
-- next – number of seconds until the next poll
-- poll – polling interval in seconds
-- delay – Round trip communication delay to the remote peer
-or server (milliseconds);
-- offset – Mean offset (phase) in the times reported between this local host and
-the remote peer or server (RMS, milliseconds);
-- jitter – Mean deviation (jitter) in the time reported for that remote peer or
-server (RMS of difference of multiple time samples, milliseconds);
+[openntpd]: http://www.openntpd.org/
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -41,32 +33,17 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   # binary = "/usr/sbin/ntpctl"
 
   ## Maximum time the ntpctl binary is allowed to run.
-  # timeout = "5ms"
+  # timeout = "5s"
 ```
 
-## Metrics
+### Permissions
 
-- ntpctl
-  - tags:
-    - remote
-    - stratum
-  - fields:
-    - delay (float, milliseconds)
-    - jitter (float, milliseconds)
-    - offset (float, milliseconds)
-    - poll (int, seconds)
-    - next (int, seconds)
-    - wt (int)
-    - tl (int)
+It's important to note that this plugin references `ntpctl`, which may require
+additional permissions to execute successfully. Depending on the user/group
+permissions of the telegraf user executing this plugin, you may need to alter
+the group membership, set facls, or use sudo.
 
-## Permissions
-
-It's important to note that this plugin references ntpctl, which may require
-additional permissions to execute successfully.
-Depending on the user/group permissions of the telegraf user executing this
-plugin, you may need to alter the group membership, set facls, or use sudo.
-
-**Group membership (Recommended)**:
+#### Group membership (recommended)
 
 ```bash
 $ groups telegraf
@@ -78,7 +55,8 @@ $ groups telegraf
 telegraf : telegraf ntpd
 ```
 
-**Sudo privileges**:
+#### Sudo privileges
+
 If you use this method, you will need the following in your telegraf config:
 
 ```toml
@@ -97,6 +75,21 @@ Defaults!NTPCTL !logfile, !syslog, !pam_session
 ```
 
 Please use the solution you see as most appropriate.
+
+## Metrics
+
+- ntpctl
+  - tags:
+    - remote (remote peer for synchorization)
+    - stratum (remote peer stratum)
+  - fields:
+    - delay (round trip delay to the remote peer in milliseconds; `float`)
+    - jitter (mean deviation (jitter) for remote peer; `float`)
+    - offset (mean offset (phase) to remote peer in milliseconds; `float`)
+    - poll (polling interval in seconds; `int`)
+    - next (number of seconds until the next poll; `int`)
+    - wt (peer weight; `int`)
+    - tl (peer trust level; `int`)
 
 ## Example Output
 

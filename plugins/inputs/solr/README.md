@@ -1,22 +1,25 @@
-# Solr Input Plugin
+# Apache Solr Input Plugin
 
-The [solr](http://lucene.apache.org/solr/) plugin collects stats via the [MBean
-Request Handler][1].
+This plugin collects statistics from [Solr][solr] instances using the
+[MBean Request Handler][mbean_request_handler]. For additional details on
+performance statistics check the [performance statistics reference][reference].
 
-More about [performance statistics][2].
+> [!NOTE]
+> This plugin requires Apache Solr v3.5+.
 
-Tested from 3.5 to 9.3
+⭐ Telegraf v1.5.0
+🏷️ server
+💻 all
 
-[1]: https://cwiki.apache.org/confluence/display/solr/MBean+Request+Handler
-
-[2]: https://cwiki.apache.org/confluence/display/solr/Performance+Statistics+Reference
+[solr]: http://lucene.apache.org/solr/
+[mbean_request_handler]: https://cwiki.apache.org/confluence/display/solr/MBean+Request+Handler
+[reference]: https://cwiki.apache.org/confluence/display/solr/Performance+Statistics+Reference
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -40,6 +43,21 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 ```
 
 ## Metrics
+
+- solr_core
+  - tags
+    - core
+    - handler
+  - fields
+    - num_docs (integer)
+    - max_docs (integer)
+    - deleted_docs (integer)
+- solr_queryhandler
+  - tags
+    - core
+    - handler
+  - fields
+    - depends on the handler information
 
 ## Example Output
 

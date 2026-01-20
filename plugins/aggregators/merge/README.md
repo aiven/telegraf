@@ -8,14 +8,14 @@ Use this plugin when fields are split over multiple metrics, with the same
 measurement, tag set and timestamp.
 
 ⭐ Telegraf v1.13.0
+🏷️ transformation
 💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -24,6 +24,10 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 ```toml @sample.conf
 # Merge metrics into multifield metrics by series key
 [[aggregators.merge]]
+  ## General Aggregator Arguments:
+  ## The period on which to flush & clear the aggregator.
+  # period = "30s"
+
   ## Precision to round the metric timestamp to
   ## This is useful for cases where metrics to merge arrive within a small
   ## interval and thus vary in timestamp. The timestamp of the resulting metric

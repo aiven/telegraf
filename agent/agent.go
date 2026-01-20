@@ -15,8 +15,8 @@ import (
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/config"
 	"github.com/influxdata/telegraf/internal"
-	"github.com/influxdata/telegraf/internal/snmp"
 	"github.com/influxdata/telegraf/models"
+	"github.com/influxdata/telegraf/plugins/common/snmp"
 	"github.com/influxdata/telegraf/plugins/processors"
 	"github.com/influxdata/telegraf/plugins/serializers/influx"
 )
@@ -515,7 +515,7 @@ func (a *Agent) testRunInputs(
 			// Run plugins that require multiple gathers to calculate rate
 			// and delta metrics twice.
 			switch input.Config.Name {
-			case "cpu", "mongodb", "procstat":
+			case "cpu", "mongodb", "procstat", "aiven-procstat":
 				nulAcc := NewAccumulator(input, nul)
 				nulAcc.SetPrecision(getPrecision(precision, interval))
 				if err := input.Input.Gather(nulAcc); err != nil {

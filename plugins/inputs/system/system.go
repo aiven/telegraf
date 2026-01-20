@@ -21,30 +21,36 @@ import (
 //go:embed sample.conf
 var sampleConfig string
 
-type SystemStats struct {
-	Log telegraf.Logger
+type System struct {
+	Log telegraf.Logger `toml:"-"`
 }
 
-func (*SystemStats) SampleConfig() string {
+func (*System) SampleConfig() string {
 	return sampleConfig
 }
 
-func (s *SystemStats) Gather(acc telegraf.Accumulator) error {
+func (s *System) Gather(acc telegraf.Accumulator) error {
 	loadavg, err := load.Avg()
 	if err != nil && !strings.Contains(err.Error(), "not implemented") {
 		return err
 	}
 
-	numCPUs, err := cpu.Counts(true)
+	numLogicalCPUs, err := cpu.Counts(true)
+	if err != nil {
+		return err
+	}
+
+	numPhysicalCPUs, err := cpu.Counts(false)
 	if err != nil {
 		return err
 	}
 
 	fields := map[string]interface{}{
-		"load1":  loadavg.Load1,
-		"load5":  loadavg.Load5,
-		"load15": loadavg.Load15,
-		"n_cpus": numCPUs,
+		"load1":           loadavg.Load1,
+		"load5":           loadavg.Load5,
+		"load15":          loadavg.Load15,
+		"n_cpus":          numLogicalCPUs,
+		"n_physical_cpus": numPhysicalCPUs,
 	}
 
 	users, err := host.Users()
@@ -112,6 +118,6 @@ func formatUptime(uptime uint64) string {
 
 func init() {
 	inputs.Add("system", func() telegraf.Input {
-		return &SystemStats{}
+		return &System{}
 	})
 }

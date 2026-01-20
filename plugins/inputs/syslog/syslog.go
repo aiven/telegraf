@@ -20,6 +20,7 @@ import (
 	"github.com/leodido/go-syslog/v4/rfc5424"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/config"
 	"github.com/influxdata/telegraf/plugins/common/socket"
 	"github.com/influxdata/telegraf/plugins/inputs"
 )
@@ -30,13 +31,14 @@ var sampleConfig string
 const readTimeoutMsg = "Read timeout set! Connections, inactive for the set duration, will be closed!"
 
 type Syslog struct {
-	Address        string                     `toml:"server"`
-	Framing        string                     `toml:"framing"`
-	SyslogStandard string                     `toml:"syslog_standard"`
-	Trailer        nontransparent.TrailerType `toml:"trailer"`
-	BestEffort     bool                       `toml:"best_effort"`
-	Separator      string                     `toml:"sdparam_separator"`
-	Log            telegraf.Logger            `toml:"-"`
+	Address          string                     `toml:"server"`
+	Framing          string                     `toml:"framing"`
+	SyslogStandard   string                     `toml:"syslog_standard"`
+	Trailer          nontransparent.TrailerType `toml:"trailer"`
+	BestEffort       bool                       `toml:"best_effort"`
+	Separator        string                     `toml:"sdparam_separator"`
+	MaxMessageLength config.Size                `toml:"max_message_length"`
+	Log              telegraf.Logger            `toml:"-"`
 	socket.Config
 
 	mu sync.Mutex
@@ -156,11 +158,30 @@ func (s *Syslog) Stop() {
 func (s *Syslog) createStreamDataHandler(acc telegraf.Accumulator) socket.CallbackConnection {
 	// Create parser options
 	var opts []syslog.ParserOption
-	if s.BestEffort {
-		opts = append(opts, syslog.WithBestEffort())
+	var machineOpts []syslog.MachineOption
+	switch s.SyslogStandard {
+	case "RFC3164":
+		if s.BestEffort {
+			machineOpts = append(machineOpts, rfc3164.WithBestEffort())
+		}
+		machineOpts = append(machineOpts, rfc3164.WithYear(rfc3164.CurrentYear{}))
+
+	case "RFC5424":
+		if s.BestEffort {
+			machineOpts = append(machineOpts, rfc5424.WithBestEffort())
+		}
 	}
+
 	if s.Framing == "non-transparent" {
 		opts = append(opts, nontransparent.WithTrailer(s.Trailer))
+	}
+	if len(machineOpts) > 0 {
+		opts = append(opts, syslog.WithMachineOptions(machineOpts...))
+	}
+
+	if s.MaxMessageLength > 0 {
+		// go-syslog handles this option as no-op under non-transparent
+		opts = append(opts, syslog.WithMaxMessageLength(int(s.MaxMessageLength)))
 	}
 
 	return func(src net.Addr, reader io.ReadCloser) {
@@ -168,9 +189,19 @@ func (s *Syslog) createStreamDataHandler(acc telegraf.Accumulator) socket.Callba
 		var parser syslog.Parser
 		switch s.Framing {
 		case "octet-counting":
-			parser = octetcounting.NewParser(opts...)
+			switch s.SyslogStandard {
+			case "RFC3164":
+				parser = octetcounting.NewParserRFC3164(opts...)
+			case "RFC5424":
+				parser = octetcounting.NewParser(opts...)
+			}
 		case "non-transparent":
-			parser = nontransparent.NewParser(opts...)
+			switch s.SyslogStandard {
+			case "RFC3164":
+				parser = nontransparent.NewParserRFC3164(opts...)
+			case "RFC5424":
+				parser = nontransparent.NewParser(opts...)
+			}
 		}
 
 		// Remove port from address

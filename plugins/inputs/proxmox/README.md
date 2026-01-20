@@ -1,16 +1,19 @@
 # Proxmox Input Plugin
 
-The proxmox plugin gathers metrics about containers and VMs using the Proxmox
-API.
+This plugin gathers metrics about containers and VMs running on a
+[Proxmox][proxmox] instance using the Proxmox API.
 
-Telegraf minimum version: Telegraf 1.16.0
+⭐ Telegraf v1.16.0
+🏷️ server
+💻 all
+
+[proxmox]: https://www.proxmox.com
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -62,36 +65,35 @@ pveum user token add influx@pve monitoring -privsep 1
 pveum acl modify / -role PVEAuditor -token 'influx@pve!monitoring'
 ```
 
-See this [Proxmox docs example][1] for further details.
+See this [Proxmox docs example][docs] for further details.
 
-[1]: https://pve.proxmox.com/wiki/User_Management#_limited_api_token_for_monitoring
+[docs]: https://pve.proxmox.com/wiki/User_Management#_limited_api_token_for_monitoring
 
 ## Metrics
 
 - proxmox
-  - status
-  - uptime
-  - cpuload
-  - mem_used
-  - mem_total
-  - mem_free
-  - mem_used_percentage
-  - swap_used
-  - swap_total
-  - swap_free
-  - swap_used_percentage
-  - disk_used
-  - disk_total
-  - disk_free
-  - disk_used_percentage
-
-### Tags
-
-- node_fqdn - FQDN of the node telegraf is running on
-- vm_name - Name of the VM/container
-- vm_fqdn - FQDN of the VM/container
-- vm_type - Type of the VM/container (lxc, qemu)
-- vm_id - ID of the VM/container
+  - tags:
+    - node_fqdn - FQDN of the node telegraf is running on
+    - vm_name - Name of the VM/container
+    - vm_fqdn - FQDN of the VM/container
+    - vm_type - Type of the VM/container (lxc, qemu)
+    - vm_id - ID of the VM/container
+  - fields:
+    - status
+    - uptime
+    - cpuload
+    - mem_used
+    - mem_total
+    - mem_free
+    - mem_used_percentage
+    - swap_used
+    - swap_total
+    - swap_free
+    - swap_used_percentage
+    - disk_used
+    - disk_total
+    - disk_free
+    - disk_used_percentage
 
 ## Example Output
 

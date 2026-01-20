@@ -57,6 +57,18 @@ func getConfigCommands(configHandlingFlags []cli.Flag, outputBuffer io.Writer) [
 							return err
 						}
 
+						// Set the environment variables handling mode
+						if cCtx.Bool("strict-env-handling") && cCtx.Bool("non-strict-env-handling") {
+							return errors.New("flags --strict-env-handling and --non-strict-env-handling cannot be used together")
+						}
+						if !cCtx.Bool("strict-env-handling") && !cCtx.Bool("non-strict-env-handling") {
+							msg := "Strict environment variable handling will be the new default starting with v1.38.0! " +
+								"If your configuration works with strict handling or you don't use environment variables it is safe " +
+								"to ignore this warning. Otherwise please explicitly add the --non-strict-env-handling flag!"
+							log.Println("W! " + color.YellowString(msg))
+						}
+						config.NonStrictEnvVarHandling = !cCtx.Bool("strict-env-handling")
+
 						// Collect the given configuration files
 						configFiles := cCtx.StringSlice("config")
 						configDir := cCtx.StringSlice("config-directory")
@@ -143,12 +155,12 @@ To migrate the file 'mysettings.conf' use
 
 > telegraf config migrate --config mysettings.conf
 `,
-					Flags: []cli.Flag{
+					Flags: append(configHandlingFlags,
 						&cli.BoolFlag{
 							Name:  "force",
 							Usage: "forces overwriting of an existing migration file",
 						},
-					},
+					),
 					Action: func(cCtx *cli.Context) error {
 						// Setup logging
 						logConfig := &logger.Config{Debug: cCtx.Bool("debug")}
@@ -159,10 +171,16 @@ To migrate the file 'mysettings.conf' use
 						// Check if we have migrations at all. There might be
 						// none if you run a custom build without migrations
 						// enabled.
-						if len(migrations.PluginMigrations) == 0 {
+						migrationsGeneral := len(migrations.GeneralMigrations) + len(migrations.GlobalMigrations)
+						migrationsPlugins := len(migrations.PluginMigrations)
+						migrationsOptions := len(migrations.PluginOptionMigrations)
+						if migrationsGeneral+migrationsPlugins+migrationsOptions == 0 {
 							return errors.New("no migrations available")
 						}
-						log.Printf("%d plugin migration(s) available", len(migrations.PluginMigrations))
+						log.Printf(
+							"%d general, %d plugin and %d plugin-option migrations available",
+							migrationsGeneral, migrationsPlugins, migrationsOptions,
+						)
 
 						// Collect the given configuration files
 						configFiles := cCtx.StringSlice("config")

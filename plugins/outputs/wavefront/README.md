@@ -11,10 +11,9 @@ Proxy instance over HTTP or HTTPS.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -172,8 +171,10 @@ The expected input for Wavefront is specified in the following way:
 <metric> <value> [<timestamp>] <source|host>=<sourceTagValue> [tagk1=tagv1 ...tagkN=tagvN]
 ```
 
-More information about the Wavefront data format is available
-[here](https://community.wavefront.com/docs/DOC-1031)
+More information about the Wavefront data format is available in the
+[documentation][docs].
+
+[docs]: https://community.wavefront.com/docs/DOC-1031
 
 ### Allowed values for metrics
 

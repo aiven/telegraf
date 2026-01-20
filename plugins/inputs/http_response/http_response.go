@@ -37,7 +37,6 @@ const (
 )
 
 type HTTPResponse struct {
-	Address         string              `toml:"address" deprecated:"1.12.0;1.35.0;use 'urls' instead"`
 	URLs            []string            `toml:"urls"`
 	HTTPProxy       string              `toml:"http_proxy"`
 	Body            string              `toml:"body"`
@@ -99,11 +98,7 @@ func (h *HTTPResponse) Init() error {
 	}
 
 	if len(h.URLs) == 0 {
-		if h.Address == "" {
-			h.URLs = []string{"http://localhost"}
-		} else {
-			h.URLs = []string{h.Address}
-		}
+		h.URLs = []string{"http://localhost"}
 	}
 
 	h.clients = make([]client, 0, len(h.URLs))
@@ -128,7 +123,6 @@ func (h *HTTPResponse) Init() error {
 	return nil
 }
 
-// Gather gets all metric fields and tags and returns any errors it encounters
 func (h *HTTPResponse) Gather(acc telegraf.Accumulator) error {
 	for _, c := range h.clients {
 		// Prepare data

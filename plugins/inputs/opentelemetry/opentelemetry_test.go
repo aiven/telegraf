@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	otlplogs "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	otlpmetrics "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
-	otlpprofiles "go.opentelemetry.io/proto/otlp/collector/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/proto/otlp/collector/profiles/v1development"
 	otlptrace "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -44,7 +44,7 @@ func TestOpenTelemetry(t *testing.T) {
 	defer plugin.Stop()
 
 	// Setup the OpenTelemetry exporter
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 
 	exporter, err := otlpmetricgrpc.New(ctx,
@@ -196,7 +196,7 @@ func TestCases(t *testing.T) {
 
 			// Send all data to the plugin
 			addr := plugin.listener.Addr().String()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 			defer cancel()
 
 			grpcClient, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))

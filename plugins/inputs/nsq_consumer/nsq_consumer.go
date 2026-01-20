@@ -21,7 +21,6 @@ const (
 )
 
 type NSQConsumer struct {
-	Server                 string          `toml:"server" deprecated:"1.5.0;1.35.0;use 'nsqd' instead"`
 	Nsqd                   []string        `toml:"nsqd"`
 	Nsqlookupd             []string        `toml:"nsqlookupd"`
 	Topic                  string          `toml:"topic"`
@@ -48,6 +47,7 @@ type logger struct {
 	log telegraf.Logger
 }
 
+// Output writes log messages from the NSQ library to the Telegraf logger.
 func (l *logger) Output(_ int, s string) error {
 	l.log.Debug(s)
 	return nil
@@ -58,11 +58,6 @@ func (*NSQConsumer) SampleConfig() string {
 }
 
 func (n *NSQConsumer) Init() error {
-	// For backward compatibility
-	if n.Server != "" {
-		n.Nsqd = append(n.Nsqd, n.Server)
-	}
-
 	// Check if we have anything to connect to
 	if len(n.Nsqlookupd) == 0 && len(n.Nsqd) == 0 {
 		return errors.New("either 'nsqd' or 'nsqlookupd' needs to be specified")

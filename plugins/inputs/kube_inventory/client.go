@@ -7,6 +7,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -23,7 +24,7 @@ type client struct {
 	*kubernetes.Clientset
 }
 
-func newClient(baseURL, namespace, bearerTokenFile, bearerToken string, timeout time.Duration, tlsConfig tls.ClientConfig) (*client, error) {
+func newClient(baseURL, namespace, bearerTokenFile string, timeout time.Duration, tlsConfig tls.ClientConfig) (*client, error) {
 	var clientConfig *rest.Config
 	var err error
 
@@ -47,8 +48,6 @@ func newClient(baseURL, namespace, bearerTokenFile, bearerToken string, timeout 
 
 		if bearerTokenFile != "" {
 			clientConfig.BearerTokenFile = bearerTokenFile
-		} else if bearerToken != "" {
-			clientConfig.BearerToken = bearerToken
 		}
 	}
 
@@ -79,6 +78,7 @@ func newHTTPClient(tlsConfig tls.ClientConfig, bearerTokenFile string, responseT
 	}
 	return rest.HTTPClientFor(clientConfig)
 }
+
 func (c *client) getDaemonSets(ctx context.Context) (*appsv1.DaemonSetList, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
@@ -91,10 +91,10 @@ func (c *client) getDeployments(ctx context.Context) (*appsv1.DeploymentList, er
 	return c.AppsV1().Deployments(c.namespace).List(ctx, metav1.ListOptions{})
 }
 
-func (c *client) getEndpoints(ctx context.Context) (*corev1.EndpointsList, error) {
+func (c *client) getEndpoints(ctx context.Context) (*discoveryv1.EndpointSliceList, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
-	return c.CoreV1().Endpoints(c.namespace).List(ctx, metav1.ListOptions{})
+	return c.DiscoveryV1().EndpointSlices(c.namespace).List(ctx, metav1.ListOptions{})
 }
 
 func (c *client) getIngress(ctx context.Context) (*netv1.IngressList, error) {

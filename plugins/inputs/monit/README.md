@@ -1,23 +1,25 @@
 # Monit Input Plugin
 
-The `monit` plugin gathers metrics and status information about local processes,
-remote hosts, file, file systems, directories and network interfaces managed
+This plugin gathers metrics and status information about local processes,
+remote hosts, files, file systems, directories and network interfaces managed
 and watched over by [Monit][monit].
 
-The use this plugin you should first enable the [HTTPD TCP port][httpd] in
-Monit.
+> [!NOTE]
+> The plugin supports Monit version 5.16+.
+> To use this plugin you have to enable the [HTTPD TCP port][httpd] in Monit.
 
-Minimum Version of Monit tested with is 5.16.
+⭐ Telegraf v1.14.0
+🏷️ network
+💻 all
 
 [monit]: https://mmonit.com/
 [httpd]: https://mmonit.com/monit/documentation/monit.html#TCP-PORT
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

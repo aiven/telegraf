@@ -1,13 +1,24 @@
 # OpenLDAP Input Plugin
 
-This plugin gathers metrics from OpenLDAP's cn=Monitor backend.
+This plugin gathers metrics from [OpenLDAP][openldap]'s `cn=Monitor` backend.
+To use this plugin you must enable the [slapd monitoring][slapd_docs] backend.
+
+> [!NOTE]
+> It is recommended to use the newer [`ldap` input plugin][ldap_plugin] instead.
+
+⭐ Telegraf v1.4.0
+🏷️ server, network
+💻 all
+
+[openldap]: https://www.openldap.org/
+[slapd_docs]: https://www.openldap.org/devel/admin/monitoringslapd.html
+[ldap_plugin]: /plugins/inputs/ldap/README.md
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -39,15 +50,12 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   reverse_metric_names = true
 ```
 
-To use this plugin you must enable the [slapd
-monitoring](https://www.openldap.org/devel/admin/monitoringslapd.html) backend.
-
 ## Metrics
 
-All **monitorCounter**, **monitoredInfo**, **monitorOpInitiated**, and
-**monitorOpCompleted** attributes are gathered based on this LDAP query:
+All `monitorCounter`, `monitoredInfo`, `monitorOpInitiated`, and
+`monitorOpCompleted` attributes are gathered based on this LDAP query:
 
-```sh
+```text
 (|(objectClass=monitorCounterObject)(objectClass=monitorOperation)(objectClass=monitoredObject))
 ```
 
@@ -56,54 +64,53 @@ Metric names are based on their entry DN with the cn=Monitor base removed. If
 `reverse_metric_names` is set to `true`, the names are reversed. This is
 recommended as it allows the names to sort more naturally.
 
-Metrics for the **monitorOp*** attributes have **_initiated** and **_completed**
-added to the base name as appropriate.
+Metrics for the `monitorOp*` attributes have `_initiated` and `_completed` added
+to the base name as appropriate.
 
 An OpenLDAP 2.4 server will provide these metrics:
 
 - openldap
-  - connections_current
-  - connections_max_file_descriptors
-  - connections_total
-  - operations_abandon_completed
-  - operations_abandon_initiated
-  - operations_add_completed
-  - operations_add_initiated
-  - operations_bind_completed
-  - operations_bind_initiated
-  - operations_compare_completed
-  - operations_compare_initiated
-  - operations_delete_completed
-  - operations_delete_initiated
-  - operations_extended_completed
-  - operations_extended_initiated
-  - operations_modify_completed
-  - operations_modify_initiated
-  - operations_modrdn_completed
-  - operations_modrdn_initiated
-  - operations_search_completed
-  - operations_search_initiated
-  - operations_unbind_completed
-  - operations_unbind_initiated
-  - statistics_bytes
-  - statistics_entries
-  - statistics_pdu
-  - statistics_referrals
-  - threads_active
-  - threads_backload
-  - threads_max
-  - threads_max_pending
-  - threads_open
-  - threads_pending
-  - threads_starting
-  - time_uptime
-  - waiters_read
-  - waiters_write
-
-### Tags
-
-- server= # value from config
-- port= # value from config
+  - tags:
+    - server
+    - port
+  - fields:
+    - connections_current
+    - connections_max_file_descriptors
+    - connections_total
+    - operations_abandon_completed
+    - operations_abandon_initiated
+    - operations_add_completed
+    - operations_add_initiated
+    - operations_bind_completed
+    - operations_bind_initiated
+    - operations_compare_completed
+    - operations_compare_initiated
+    - operations_delete_completed
+    - operations_delete_initiated
+    - operations_extended_completed
+    - operations_extended_initiated
+    - operations_modify_completed
+    - operations_modify_initiated
+    - operations_modrdn_completed
+    - operations_modrdn_initiated
+    - operations_search_completed
+    - operations_search_initiated
+    - operations_unbind_completed
+    - operations_unbind_initiated
+    - statistics_bytes
+    - statistics_entries
+    - statistics_pdu
+    - statistics_referrals
+    - threads_active
+    - threads_backload
+    - threads_max
+    - threads_max_pending
+    - threads_open
+    - threads_pending
+    - threads_starting
+    - time_uptime
+    - waiters_read
+    - waiters_write
 
 ## Example Output
 

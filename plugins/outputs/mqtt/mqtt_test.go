@@ -169,7 +169,7 @@ func TestIntegrationMQTTv3(t *testing.T) {
 			Timeout:       config.Duration(5 * time.Second),
 			AutoReconnect: true,
 		},
-		Topic:  topic + "/{{.PluginName}}",
+		Topic:  topic + "/{{.Name}}",
 		Layout: "non-batch",
 		Log:    testutil.Logger{Name: "mqttv3-integration-test"},
 	}
@@ -321,7 +321,7 @@ func TestIntegrationMQTTLayoutNonBatch(t *testing.T) {
 			Timeout:       config.Duration(5 * time.Second),
 			AutoReconnect: true,
 		},
-		Topic:  topic + "/{{.PluginName}}",
+		Topic:  topic + "/{{.Name}}",
 		Layout: "non-batch",
 		Log:    testutil.Logger{Name: "mqttv3-integration-test"},
 	}
@@ -408,7 +408,7 @@ func TestIntegrationMQTTLayoutBatch(t *testing.T) {
 			Timeout:       config.Duration(5 * time.Second),
 			AutoReconnect: true,
 		},
-		Topic:  topic + "/{{.PluginName}}",
+		Topic:  topic + "/{{.Name}}",
 		Layout: "batch",
 		Log:    testutil.Logger{Name: "mqttv3-integration-test-"},
 	}
@@ -492,7 +492,7 @@ func TestIntegrationMQTTLayoutField(t *testing.T) {
 			Timeout:       config.Duration(5 * time.Second),
 			AutoReconnect: true,
 		},
-		Topic:  topic + `/{{.PluginName}}/{{.Tag "source"}}`,
+		Topic:  topic + `/{{.Name}}/{{.Tag "source"}}`,
 		Layout: "field",
 		Log:    testutil.Logger{Name: "mqttv3-integration-test-"},
 	}
@@ -607,8 +607,8 @@ func TestIntegrationMQTTLayoutHomieV4(t *testing.T) {
 			Timeout:       config.Duration(5 * time.Second),
 			AutoReconnect: true,
 		},
-		Topic:           topic + "/{{.PluginName}}",
-		HomieDeviceName: `{{.PluginName}}`,
+		Topic:           topic + "/{{.Name}}",
+		HomieDeviceName: `{{.Name}}`,
 		HomieNodeID:     `{{.Tag "source"}}`,
 		Layout:          "homie-v4",
 		Log:             testutil.Logger{Name: "mqttv3-integration-test-"},
@@ -845,6 +845,7 @@ func TestMQTTTopicGenerationTemplateIsValid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MQTT{
+				Log:   testutil.Logger{},
 				Topic: tt.topic,
 				MqttConfig: mqtt.MqttConfig{
 					Servers: []string{"tcp://localhost:1883"},
@@ -884,13 +885,18 @@ func TestGenerateTopicName(t *testing.T) {
 			want:    "telegraf/hostname/metric-name",
 		},
 		{
+			name:    "matches default format",
+			pattern: `telegraf/{{ .Tag "host" }}/{{ .Name }}`,
+			want:    "telegraf/hostname/metric-name",
+		},
+		{
 			name:    "respect hardcoded strings",
 			pattern: "this/is/a/topic",
 			want:    "this/is/a/topic",
 		},
 		{
 			name:    "allows the use of tags",
-			pattern: "{{ .TopicPrefix }}/{{ .Tag \"tag1\" }}",
+			pattern: "prefix/{{ .Tag \"tag1\" }}",
 			want:    "prefix/value1",
 		},
 		{
@@ -900,7 +906,7 @@ func TestGenerateTopicName(t *testing.T) {
 		},
 		{
 			name:    "ignores tag when tag does not exists",
-			pattern: "{{ .TopicPrefix }}/{{ .Tag \"not-a-tag\" }}",
+			pattern: "prefix/{{ .Tag \"not-a-tag\" }}",
 			want:    "prefix",
 		},
 		{
@@ -917,15 +923,14 @@ func TestGenerateTopicName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m.Topic = tt.pattern
-			m.TopicPrefix = "prefix"
 			met := metric.New(
 				"metric-name",
-				map[string]string{"tag1": "value1"},
+				map[string]string{"tag1": "value1", "host": "hostname"},
 				map[string]interface{}{"value": 123},
 				time.Date(2022, time.November, 10, 23, 0, 0, 0, time.UTC),
 			)
 			require.NoError(t, m.Init())
-			actual, err := m.generator.Generate("hostname", met)
+			actual, err := m.generateTopic(met)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, actual)
 		})

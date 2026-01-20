@@ -1,8 +1,8 @@
 # Librato Output Plugin
 
 This plugin writes metrics to the [Librato][librato] service. It requires an
-`api_user` and `api_token` which can be obtained [here][tokens] for your
-account.
+`api_user` and `api_token` which can be obtained on the [website][tokens] for
+your account.
 
 The `source_tag` option in the Configuration file is used to send contextual
 information from Point Tags to the API. Besides from this, the plugin currently
@@ -21,10 +21,9 @@ does not send any additional associated Point Tags.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

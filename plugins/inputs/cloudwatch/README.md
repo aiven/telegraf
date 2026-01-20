@@ -23,10 +23,9 @@ API endpoint. In the following order the plugin will attempt to authenticate.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -100,13 +99,13 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## Do not enable if "period" or "delay" is longer than 3 hours, as it will
   ## not return data more than 3 hours old.
   ## See https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_ListMetrics.html
-  #recently_active = "PT3H"
+  # recently_active = "PT3H"
 
   ## Configure the TTL for the internal cache of metrics.
   # cache_ttl = "1h"
 
-  ## Metric Statistic Namespaces (required)
-  namespaces = ["AWS/ELB"]
+  ## Metric Statistic Namespaces, wildcards are allowed
+  # namespaces = ["*"]
 
   ## Metric Format
   ## This determines the format of the produces metrics. 'sparse', the default

@@ -10,18 +10,17 @@ This plugin writes metrics to a [InfluxDB v2.x][influxdb_v2] instance via HTTP.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
 ## Secret-store support
 
-This plugin supports secrets from secret-stores for the `token` option.
-See the [secret-store documentation][SECRETSTORE] for more details on how
-to use them.
+This plugin supports secrets from secret-stores for the `token` and
+`http_headers` option. See the [secret-store documentation][SECRETSTORE] for
+more details on how to use them.
 
 [SECRETSTORE]: ../../../docs/CONFIGURATION.md#secret-store-secrets
 
@@ -103,10 +102,16 @@ to use them.
   # insecure_skip_verify = false
 
   ## Rate limits for sending data (disabled by default)
-  ## Available, uncompressed payload size e.g. "5Mb"
+  ## Available, uncompressed payload size e.g. "5MB"
   # rate_limit = "unlimited"
   ## Fixed time-window for the available payload size e.g. "5m"
   # rate_limit_period = "0s"
+
+  ## Number of concurrent writes to the output
+  ## When set to one sequential sending is used (default).
+  ## NOTE: When using two or more concurrent writes the sending order of
+  ##       metrics is not guaranteed!
+  # concurrent_writes = 1
 ```
 
 ## Metrics

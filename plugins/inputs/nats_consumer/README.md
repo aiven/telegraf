@@ -1,19 +1,27 @@
 # NATS Consumer Input Plugin
 
-The [NATS][nats] consumer plugin reads from the specified NATS subjects and
-creates metrics using one of the supported [input data formats][].
+This service plugin consumes messages from [NATS][nats] instances in one of the
+supported [data formats][data_formats]. A [Queue Group][queue_group] is used
+when subscribing to subjects so multiple instances of telegraf can consume
+messages in parallel.
+The plugin supports authenticating via [username/password][userpass], a
+[credentials file][creds] (NATS 2.0), or an [nkey seed file][nkey] (NATS 2.0).
 
-A [Queue Group][queue group] is used when subscribing to subjects so multiple
-instances of telegraf can read from a NATS cluster in parallel.
+⭐ Telegraf v0.10.3
+🏷️ messaging
+💻 all
 
-There are three methods of (optionally) authenticating with NATS:
-[username/password][userpass], [a NATS creds file][creds] (NATS 2.0), or
-an [nkey seed file][nkey] (NATS 2.0).
+[nats]: https://www.nats.io/about/
+[data_formats]: /docs/DATA_FORMATS_INPUT.md
+[queue_group]: https://www.nats.io/documentation/concepts/nats-queueing/
+[userpass]: https://docs.nats.io/using-nats/developer/connecting/userpass
+[creds]: https://docs.nats.io/using-nats/developer/connecting/creds
+[nkey]: https://docs.nats.io/using-nats/developer/connecting/nkey
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -23,10 +31,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -51,6 +58,11 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## message. You need to configure the nats-server.
   ## https://docs.nats.io/nats-concepts/jetstream.
   jetstream_subjects = ["js_telegraf"]
+
+  ## explicitly specify the jetstream stream name
+  ## useful for sourced streams where there is no subject defined and
+  ## thus jetstream_subjects won't work
+  jetstream_stream = ""
 
   ## name a queue group
   queue_group = "telegraf_consumers"
@@ -98,13 +110,6 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## https://github.com/influxdata/telegraf/blob/master/docs/DATA_FORMATS_INPUT.md
   data_format = "influx"
 ```
-
-[nats]: https://www.nats.io/about/
-[input data formats]: /docs/DATA_FORMATS_INPUT.md
-[queue group]: https://www.nats.io/documentation/concepts/nats-queueing/
-[userpass]: https://docs.nats.io/using-nats/developer/connecting/userpass
-[creds]: https://docs.nats.io/using-nats/developer/connecting/creds
-[nkey]: https://docs.nats.io/using-nats/developer/connecting/nkey
 
 ## Metrics
 

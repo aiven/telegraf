@@ -1,15 +1,20 @@
-# Tengine Input Plugin
+# Tengine Web Server Input Plugin
 
-The tengine plugin gathers metrics from the
-[Tengine Web Server](http://tengine.taobao.org/) via the
-[reqstat](http://tengine.taobao.org/document/http_reqstat.html) module.
+This plugin gathers metrics from the [Tengine Web Server][tengine] via the
+[reqstat][reqstat] module.
+
+⭐ Telegraf v1.8.0
+🏷️ server, web
+💻 all
+
+[tengine]: http://tengine.taobao.org
+[reqstat]: http://tengine.taobao.org/document/http_reqstat.html
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

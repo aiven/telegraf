@@ -1,13 +1,17 @@
 # Trig Input Plugin
 
-The `trig` plugin is for demonstration purposes and inserts sine and cosine
+This plugin is for demonstration purposes and inserts sine and cosine values
+as metrics.
+
+⭐ Telegraf v0.3.0
+🏷️ testing
+💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

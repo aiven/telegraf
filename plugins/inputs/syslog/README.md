@@ -1,19 +1,27 @@
 # Syslog Input Plugin
 
-The syslog plugin listens for syslog messages transmitted over a Unix Domain
-socket, [UDP](https://tools.ietf.org/html/rfc5426),
-[TCP](https://tools.ietf.org/html/rfc6587), or
-[TLS](https://tools.ietf.org/html/rfc5425); with or without the octet counting
-framing.
+This service plugin listens for [syslog][syslog] messages transmitted over a
+Unix Domain socket, [UDP][rfc5426], [TCP][rfc6587] or [TLS][rfc5425] with or
+without the octet counting framing.
 
-Syslog messages should be formatted according to
-[RFC 5424](https://tools.ietf.org/html/rfc5424) (syslog protocol) or
-[RFC 3164](https://tools.ietf.org/html/rfc3164) (BSD syslog protocol).
+Syslog messages should be formatted according to the [syslog protocol][rfc5424]
+or the [BSD syslog protocol][rfc3164].
+
+⭐ Telegraf v1.7.0
+🏷️ logging
+💻 all
+
+[syslog]: https://en.wikipedia.org/wiki/Syslog
+[rfc5426]: https://tools.ietf.org/html/rfc5426
+[rfc6587]: https://tools.ietf.org/html/rfc6587
+[rfc5425]: https://tools.ietf.org/html/rfc5425
+[rfc5424]: https://tools.ietf.org/html/rfc5424
+[rfc3164]: https://tools.ietf.org/html/rfc3164
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -23,10 +31,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -83,6 +90,10 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## Maximum size of decoded packet (in bytes when no unit specified)
   # max_decompression_size = "500MB"
 
+  ## List of allowed source IP addresses for incoming packets/messages.
+  ## If not specified or empty, all sources are allowed.
+  # allowed_sources = []
+
   ## Framing technique used for messages transport
   ## Available settings are:
   ##   octet-counting  -- see RFC5425#section-4.3.1 and RFC6587#section-3.4.1
@@ -108,6 +119,10 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ## For each combination a field is created.
   ## Its name is created concatenating identifier, sdparam_separator, and parameter name.
   # sdparam_separator = "_"
+
+  ## Maximum length allowed for a single message (in bytes when no unit specified)
+  ## Only applies to octet-counting framing.
+  # max_message_length = "8KiB"
 ```
 
 ### Message transport
@@ -133,7 +148,7 @@ messages. If unset only full messages will be collected.
 ### Rsyslog Integration
 
 Rsyslog can be configured to forward logging messages to Telegraf by configuring
-[remote logging][3].
+[remote logging][remote_logging].
 
 Most system are setup with a configuration split between `/etc/rsyslog.conf`
 and the files in the `/etc/rsyslog.d/` directory, it is recommended to add the
@@ -166,44 +181,10 @@ action(type="omfwd" Protocol="tcp" TCP_Framing="octet-counted" Target="127.0.0.1
 #action(type="omfwd" Protocol="udp" Target="127.0.0.1" Port="6514" Template="RSYSLOG_SyslogProtocol23Format")
 ```
 
-To complete TLS setup please refer to [rsyslog docs][4].
+To complete TLS setup please refer to [rsyslog docs][rsyslog_docs].
 
-[3]: https://www.rsyslog.com/doc/v8-stable/configuration/actions.html#remote-machine
-
-[4]: https://www.rsyslog.com/doc/v8-stable/tutorials/tls.html
-
-## Metrics
-
-- syslog
-  - tags
-    - severity (string)
-    - facility (string)
-    - hostname (string)
-    - appname (string)
-    - source (string)
-  - fields
-    - version (integer)
-    - severity_code (integer)
-    - facility_code (integer)
-    - timestamp (integer): the time recorded in the syslog message
-    - procid (string)
-    - msgid (string)
-    - sdid (bool)
-    - *Structured Data* (string)
-  - timestamp: the time the messages was received
-
-### Structured Data
-
-Structured data produces field keys by combining the `SD_ID` with the
-`PARAM_NAME` combined using the `sdparam_separator` as in the following example:
-
-```shell
-170 <165>1 2018-10-01:14:15.000Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] An application event log entry...
-```
-
-```shell
-syslog,appname=evntslog,facility=local4,hostname=mymachine.example.com,severity=notice exampleSDID@32473_eventID="1011",exampleSDID@32473_eventSource="Application",exampleSDID@32473_iut="3",facility_code=20i,message="An application event log entry...",msgid="ID47",severity_code=5i,timestamp=1065910455003000000i,version=1i 1538421339749472344
-```
+[remote_logging]: https://www.rsyslog.com/doc/v8-stable/configuration/actions.html#remote-machine
+[rsyslog_docs]: https://www.rsyslog.com/doc/v8-stable/tutorials/tls.html
 
 ## Troubleshooting
 
@@ -219,9 +200,11 @@ echo "<13>1 2018-10-01T12:00:00.0Z example.org root - - - test" | nc -u 127.0.0.
 
 The `source` tag stores the remote IP address of the syslog sender.
 To resolve these IPs to DNS names, use the
-[`reverse_dns` processor](../../../plugins/processors/reverse_dns).
+[`reverse_dns` processor][plugin_reverse_dns]
 
 You can send debugging messages directly to the input plugin using netcat:
+
+[plugin_reverse_dns]: /plugins/processors/reverse_dns/README.md
 
 ### RFC3164
 
@@ -250,6 +233,37 @@ $UDPServerRun 514
 
 Make adjustments to the target address as needed and sent your RFC3164 messages
 to port 514.
+
+## Metrics
+
+- syslog
+  - tags
+    - severity (string)
+    - facility (string)
+    - hostname (string)
+    - appname (string)
+    - source (string)
+  - fields
+    - version (integer)
+    - severity_code (integer)
+    - facility_code (integer)
+    - timestamp (integer): the time recorded in the syslog message
+    - procid (string)
+    - msgid (string)
+    - sdid (bool)
+    - *Structured Data* (string)
+  - timestamp: the time the messages was received
+
+*Structured data* produces field keys by combining the `SD_ID` with the
+`PARAM_NAME` combined using the `sdparam_separator` as in the following example:
+
+```shell
+170 <165>1 2018-10-01:14:15.000Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] An application event log entry...
+```
+
+```shell
+syslog,appname=evntslog,facility=local4,hostname=mymachine.example.com,severity=notice exampleSDID@32473_eventID="1011",exampleSDID@32473_eventSource="Application",exampleSDID@32473_iut="3",facility_code=20i,message="An application event log entry...",msgid="ID47",severity_code=5i,timestamp=1065910455003000000i,version=1i 1538421339749472344
+```
 
 ## Example Output
 

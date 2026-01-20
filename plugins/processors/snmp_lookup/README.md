@@ -1,15 +1,17 @@
 # SNMP Lookup Processor Plugin
 
-The `snmp_lookup` plugin looks up extra tags using SNMP and caches them.
+This plugin looks up extra information via SNMP and adds it to the metric as
+tags.
 
-Telegraf minimum version: Telegraf 1.30.0
+⭐ Telegraf v1.30.0
+🏷️ annotation
+💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -68,7 +70,7 @@ to use them.
   ## The maximum number of SNMP requests to make at the same time.
   # max_parallel_lookups = 16
 
-  ## The amount of agents to cache entries for. If limit is reached, 
+  ## The amount of agents to cache entries for. If limit is reached,
   ## oldest will be removed first. 0 means no limit.
   # max_cache_entries = 100
 

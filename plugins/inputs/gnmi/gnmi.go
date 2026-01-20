@@ -60,9 +60,7 @@ type GNMI struct {
 	CanonicalFieldNames           bool              `toml:"canonical_field_names"`
 	TrimFieldNames                bool              `toml:"trim_field_names"`
 	PrefixTagKeyWithPath          bool              `toml:"prefix_tag_key_with_path"`
-	GuessPathTag                  bool              `toml:"guess_path_tag" deprecated:"1.30.0;1.35.0;use 'path_guessing_strategy' instead"`
 	GuessPathStrategy             string            `toml:"path_guessing_strategy"`
-	EnableTLS                     bool              `toml:"enable_tls" deprecated:"1.27.0;1.35.0;use 'tls_enable' instead"`
 	KeepaliveTime                 config.Duration   `toml:"keepalive_time"`
 	KeepaliveTimeout              config.Duration   `toml:"keepalive_timeout"`
 	YangModelPaths                []string          `toml:"yang_model_paths"`
@@ -85,7 +83,6 @@ type subscription struct {
 	SampleInterval    config.Duration `toml:"sample_interval"`
 	SuppressRedundant bool            `toml:"suppress_redundant"`
 	HeartbeatInterval config.Duration `toml:"heartbeat_interval"`
-	TagOnly           bool            `toml:"tag_only" deprecated:"1.25.0;1.35.0;please use 'tag_subscription's instead"`
 
 	fullPath *gnmi.Path
 }
@@ -121,14 +118,6 @@ func (c *GNMI) Init() error {
 	}
 
 	// Check path guessing and handle deprecated option
-	if c.GuessPathTag {
-		if c.GuessPathStrategy == "" {
-			c.GuessPathStrategy = "common path"
-		}
-		if c.GuessPathStrategy != "common path" {
-			return errors.New("conflicting settings between 'guess_path_tag' and 'path_guessing_strategy'")
-		}
-	}
 	switch c.GuessPathStrategy {
 	case "", "none", "common path", "subscription":
 	default:
@@ -137,7 +126,7 @@ func (c *GNMI) Init() error {
 
 	// Use the new TLS option for enabling
 	// Honor deprecated option
-	enable := (c.ClientConfig.Enable != nil && *c.ClientConfig.Enable) || c.EnableTLS
+	enable := c.ClientConfig.Enable != nil && *c.ClientConfig.Enable
 	c.ClientConfig.Enable = &enable
 
 	// Split the subscriptions into "normal" and "tag" subscription
@@ -153,17 +142,6 @@ func (c *GNMI) Init() error {
 			return fmt.Errorf("empty 'path' found for subscription %d", i+1)
 		}
 
-		// Support and convert legacy TagOnly subscriptions
-		if subscription.TagOnly {
-			tagSub := tagSubscription{
-				subscription: subscription,
-				Match:        "name",
-			}
-			c.TagSubscriptions = append(c.TagSubscriptions, tagSub)
-			// Remove from the original subscriptions list
-			c.Subscriptions = append(c.Subscriptions[:i], c.Subscriptions[i+1:]...)
-			continue
-		}
 		if err := subscription.buildFullPath(c); err != nil {
 			return err
 		}
@@ -171,9 +149,6 @@ func (c *GNMI) Init() error {
 	for idx := range c.TagSubscriptions {
 		if err := c.TagSubscriptions[idx].buildFullPath(c); err != nil {
 			return err
-		}
-		if c.TagSubscriptions[idx].TagOnly != c.TagSubscriptions[0].TagOnly {
-			return errors.New("do not mix legacy tag_only subscriptions and tag subscriptions")
 		}
 		switch c.TagSubscriptions[idx].Match {
 		case "":
@@ -475,13 +450,6 @@ func (s *subscription) buildAlias(aliases map[*pathInfo]string, enforceFirstName
 
 func init() {
 	inputs.Add("gnmi", func() telegraf.Input {
-		return &GNMI{
-			Redial:                        config.Duration(10 * time.Second),
-			EnforceFirstNamespaceAsOrigin: true,
-		}
-	})
-	// Backwards compatible alias:
-	inputs.Add("cisco_telemetry_gnmi", func() telegraf.Input {
 		return &GNMI{
 			Redial:                        config.Duration(10 * time.Second),
 			EnforceFirstNamespaceAsOrigin: true,

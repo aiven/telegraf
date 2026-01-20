@@ -1,15 +1,24 @@
 # Nvidia System Management Interface (SMI) Input Plugin
 
-This plugin uses a query on the
-[`nvidia-smi`](https://developer.nvidia.com/nvidia-system-management-interface)
-binary to pull GPU stats including memory and GPU usage, temp and other.
+This plugin collects metrics for [NVIDIA GPUs][nvidia] including memory and
+GPU usage, temperature and other, using the
+[NVIDIA System Management Interface][smi].
+
+> [!IMPORTANT]
+> This plugin requires the `nvidia-smi` binary to be installed on the system.
+
+⭐ Telegraf v1.7.0
+🏷️ system, hardware
+💻 all
+
+[nvidia]: https://www.nvidia.com/
+[smi]: https://developer.nvidia.com/nvidia-system-management-interface
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -24,6 +33,9 @@ using the `startup_error_behavior` setting. Available values are:
 - `ignore`: Telegraf will ignore startup errors for this plugin and disables it
             but continues processing for all other plugins.
 - `retry`:  NOT AVAILABLE
+- `probe`:  Telegraf will call the `Probe() error` method, if available. If the
+            method returns an error, Telegraf disables the plugin but continues
+            processing for all other plugins.
 
 ## Configuration
 
@@ -52,13 +64,31 @@ here `C:\Windows\System32\nvidia-smi.exe`
 You'll need to escape the `\` within the `telegraf.conf` like this: `C:\\Program
 Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe`
 
+## Troubleshooting
+
+Check the full output by running `nvidia-smi` binary manually.
+
+Linux:
+
+```sh
+sudo -u telegraf -- /usr/bin/nvidia-smi -q -x
+```
+
+Windows:
+
+```sh
+"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe" -q -x
+```
+
+Please include the output of this command if opening an GitHub issue.
+
 ## Metrics
 
 - measurement: `nvidia_smi`
   - tags
     - `name` (type of GPU e.g. `GeForce GTX 1070 Ti`)
     - `compute_mode` (The compute mode of the GPU e.g. `Default`)
-    - `index` (The port index where the GPU is connected to the motherboard e.g. `1`)
+    - `index` (Port index where the GPU is connected to the motherboard e.g. `1`)
     - `pstate` (Overclocking state for the GPU e.g. `P0`)
     - `uuid` (A unique identifier for the GPU e.g. `GPU-f9ba66fc-a7f5-94c5-da19-019ef2f9c665`)
   - fields
@@ -96,33 +126,6 @@ Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe`
     - `clocks_current_video` (integer, MHz)
     - `driver_version` (string)
     - `cuda_version` (string)
-
-## Sample Query
-
-The below query could be used to alert on the average temperature of the your
-GPUs over the last minute
-
-```sql
-SELECT mean("temperature_gpu") FROM "nvidia_smi" WHERE time > now() - 5m GROUP BY time(1m), "index", "name", "host"
-```
-
-## Troubleshooting
-
-Check the full output by running `nvidia-smi` binary manually.
-
-Linux:
-
-```sh
-sudo -u telegraf -- /usr/bin/nvidia-smi -q -x
-```
-
-Windows:
-
-```sh
-"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe" -q -x
-```
-
-Please include the output of this command if opening an GitHub issue.
 
 ## Example Output
 

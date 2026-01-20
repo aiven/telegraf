@@ -21,7 +21,7 @@ and the actual message. For example outputting `I! A log message` will create a
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -31,10 +31,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -71,7 +70,7 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   # buffer_size = "64Kib"
 
   ## Disable automatic restart of the program and stop if the program exits
-  ## with an error (i.e. non-zero error code)
+  ## with an error (non-zero error code)
   # stop_on_error = false
 
   ## Data format to consume.

@@ -1,14 +1,20 @@
 # uWSGI Input Plugin
 
-The uWSGI input plugin gathers metrics about uWSGI using its [Stats
-Server](https://uwsgi-docs.readthedocs.io/en/latest/StatsServer.html).
+This plugin gathers metrics about [uWSGI][uwsgi] using its
+[Stats Server][stats_server].
+
+⭐ Telegraf v1.12.0
+🏷️ cloud
+💻 all
+
+[uwsgi]: https://uwsgi-docs.readthedocs.io/en/latest/
+[stats_server]: https://uwsgi-docs.readthedocs.io/en/latest/StatsServer.html
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

@@ -10,16 +10,20 @@ import (
 )
 
 var imagesRPM = []string{
-	"fedora/40",
-	"fedora/39",
-	"centos/9-Stream",
+	"fedora/42",
+	"fedora/41",
+	"centos/10-Stream",
 }
 
 var imagesDEB = []string{
+	// LTS
 	"debian/bullseye",
-	"debian/bookworm",
+	// Latest
+	"debian/trixie",
+	// LTS
 	"ubuntu/noble",
-	"ubuntu/jammy",
+	// Latest
+	"ubuntu/plucky",
 }
 
 func main() {

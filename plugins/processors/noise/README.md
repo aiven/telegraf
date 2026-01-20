@@ -1,17 +1,19 @@
 # Noise Processor Plugin
 
-The _Noise_ processor is used to add noise to numerical field values. For each
-field a noise is generated using a defined probability density function and
-added to the value. The function type can be configured as _Laplace_, _Gaussian_
-or _Uniform_.  Depending on the function, various parameters need to be
-configured:
+This plugin is used to add noise to numerical field values. For each field a
+noise is generated using a defined probability density function and added to the
+value. The function type can be configured as _Laplace_, _Gaussian_ or
+_Uniform_.
+
+⭐ Telegraf v1.22.0
+🏷️ transformation
+💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -52,7 +54,9 @@ distribution functions are available.
 ### Laplacian
 
 - `noise_type = laplacian`
-- `scale`: also referred to as _diversity_ parameter, regulates the width & height of the function, a bigger `scale` value means a higher probability of larger noise, default set to 1.0
+- `scale`: also referred to as _diversity_ parameter, regulates the width and
+           height of the function, a bigger `scale` value means a higher
+           probability of larger noise, default set to 1.0
 - `mu`: location of the curve, default set to 0.0
 
 ### Gaussian

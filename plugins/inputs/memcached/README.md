@@ -1,13 +1,18 @@
 # Memcached Input Plugin
 
-This plugin gathers statistics data from a Memcached server.
+This plugin gathers statistics data from [Memcached][memcached] instances.
+
+⭐ Telegraf v0.1.2
+🏷️ server
+💻 all
+
+[memcached]: https://memcached.org/
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -69,27 +74,48 @@ Fields:
   new items
 * expired_unfetched - Items pulled from LRU that were never touched by
   get/incr/append/etc before expiring
-* extstore_compact_lost - The number of objects lost during the compaction process. This happens when objects couldn't be rescued or moved to other pages before they were overwritten or evicted.
-* extstore_compact_rescues - The total number of objects successfully rescued during the compaction process, meaning they were moved to another page instead of being discarded.
-* extstore_compact_resc_cold - The number of cold objects (rarely accessed) rescued during the compaction process.
-* extstore_compact_resc_old - The number of older objects (likely less frequently accessed) rescued during the compaction process.
-* extstore_compact_skipped - The number of compaction operations skipped, often due to the page not requiring compaction or other conditions preventing it.
-* extstore_page_allocs - The total number of pages allocated in the external storage system.
-* extstore_page_evictions - The total number of pages evicted (removed) from external storage, generally to free up space.
-* extstore_page_reclaims - The total number of previously evicted pages that were reclaimed and reused.
-* extstore_pages_free - The number of pages currently free (unallocated) in the external storage.
-* extstore_pages_used - The number of pages currently in use in the external storage system.
-* extstore_objects_evicted - The total number of objects evicted from external storage, typically to free up space.
+* extstore_compact_lost - The number of objects lost during the compaction
+                          process. This happens when objects couldn't be rescued
+                          or moved to other pages before they were overwritten
+                          or evicted.
+* extstore_compact_rescues - The total number of objects successfully rescued
+                             during the compaction process, meaning they were
+                             moved to another page instead of being discarded.
+* extstore_compact_resc_cold - The number of cold objects (rarely accessed)
+                               rescued during the compaction process.
+* extstore_compact_resc_old - The number of older objects (likely less
+                              frequently accessed) rescued during the compaction
+                              process.
+* extstore_compact_skipped - The number of compaction operations skipped, often
+                             due to the page not requiring compaction or other
+                             conditions preventing it.
+* extstore_page_allocs - The total number of pages allocated in the external
+                         storage system.
+* extstore_page_evictions - The total number of pages evicted (removed) from
+                            external storage, generally to free up space.
+* extstore_page_reclaims - The total number of previously evicted pages that
+                           were reclaimed and reused.
+* extstore_pages_free - The number of pages currently free (unallocated) in the
+                        external storage.
+* extstore_pages_used - The number of pages currently in use in the external
+                        storage system.
+* extstore_objects_evicted - The total number of objects evicted from external
+                             storage, typically to free up space.
 * extstore_objects_read - The total number of objects read from external storage.
 * extstore_objects_written - The total number of objects written to external storage.
-* extstore_objects_used - The number of active objects currently in use in the external storage.
+* extstore_objects_used - The number of active objects currently in use in the
+                          external storage.
 * extstore_bytes_evicted - The total number of bytes evicted from external storage.
 * extstore_bytes_written - The total number of bytes written to external storage.
 * extstore_bytes_read - The total number of bytes read from external storage.
 * extstore_bytes_used - The total number of bytes currently in use in external storage.
-* extstore_bytes_fragmented - The total number of fragmented bytes in external storage, representing space that is allocated but not fully utilized.
-* extstore_limit_maxbytes - The maximum limit of bytes that external storage can use.
-* extstore_io_queue - The current length of the I/O queue, representing pending input/output operations for external storage.
+* extstore_bytes_fragmented - The total number of fragmented bytes in external
+                              storage, representing space that is allocated but
+                              not fully utilized.
+* extstore_limit_maxbytes - The maximum limit of bytes that external storage can
+                            use.
+* extstore_io_queue - The current length of the I/O queue, representing pending
+                      input/output operations for external storage.
 * get_expired - Number of items that have been requested but had already
   expired
 * get_flushed - Number of items that have been requested but have been flushed

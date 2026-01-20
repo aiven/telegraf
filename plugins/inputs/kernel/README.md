@@ -1,75 +1,23 @@
 # Kernel Input Plugin
 
-This plugin is only available on Linux.
+This plugin gathers metrics about the [Linux kernel][kernel] including, among
+others, the [available entropy][entropy], [Kernel Samepage Merging][ksm] and
+[Pressure Stall Information][psi].
 
-The kernel plugin gathers info about the kernel that doesn't fit into other
-plugins. In general, it is the statistics available in `/proc/stat` that are not
-covered by other plugins as well as the value of
-`/proc/sys/kernel/random/entropy_avail` and optionally, Kernel Samepage Merging
-and Pressure Stall Information.
+⭐ Telegraf v0.11.0
+🏷️ system
+💻 linux
 
-The metrics are documented in `man 5 proc` under the `/proc/stat` section, as
-well as `man 4 random` under the `/proc interfaces` section
-(for `entropy_avail`).
-
-```text
-/proc/sys/kernel/random/entropy_avail
-Contains the value of available entropy
-
-/proc/stat
-kernel/system statistics. Varies with architecture. Common entries include:
-
-page 5741 1808
-The number of pages the system paged in and the number that were paged out (from disk).
-
-swap 1 0
-The number of swap pages that have been brought in and out.
-
-intr 1462898
-This line shows counts of interrupts serviced since boot time, for each of
-the possible system interrupts. The first column is the total of all
-interrupts serviced; each subsequent column is the total for a particular interrupt.
-
-ctxt 115315
-The number of context switches that the system underwent.
-
-btime 769041601
-boot time, in seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
-
-processes 86031
-Number of forks since boot.
-```
-
-Kernel Samepage Merging is generally documented in [kernel documentation][1] and
-the available metrics exposed via sysfs are documented in [admin guide][2].
-
-Pressure Stall Information is exposed through `/proc/pressure` and is documented
-in [kernel documentation][3]. Kernel version 4.20 or later is required.
-Examples of PSI:
-
-```shell
-# /proc/pressure/cpu
-some avg10=1.53 avg60=1.87 avg300=1.73 total=1088168194
-
-# /proc/pressure/memory
-some avg10=0.00 avg60=0.00 avg300=0.00 total=3463792
-full avg10=0.00 avg60=0.00 avg300=0.00 total=1429641
-
-# /proc/pressure/io
-some avg10=0.00 avg60=0.00 avg300=0.00 total=68568296
-full avg10=0.00 avg60=0.00 avg300=0.00 total=54982338
-```
-
-[1]: https://www.kernel.org/doc/html/latest/mm/ksm.html
-[2]: https://www.kernel.org/doc/html/latest/admin-guide/mm/ksm.html#ksm-daemon-sysfs-interface
-[3]: https://www.kernel.org/doc/html/latest/accounting/psi.html
+[kernel]: https://kernel.org/
+[entropy]: https://www.kernel.org/doc/html/latest/admin-guide/sysctl/kernel.html#random
+[ksm]: https://www.kernel.org/doc/html/latest/mm/ksm.html
+[psi]: https://www.kernel.org/doc/html/latest/accounting/psi.html
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -86,30 +34,51 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   # collect = []
 ```
 
+Please check the documentation of the underlying kernel interfaces in the
+`/proc/stat` section of the [proc man page][man_proc], as well as in the
+`/proc interfaces` section of the [random man page][man_random].
+
+Kernel Samepage Merging is generally documented in the
+[kernel documentation][ksm] and the available metrics exposed via sysfs
+are documented in the [admin guide][ksm_admin].
+
+Pressure Stall Information is exposed through `/proc/pressure` and is documented
+in [kernel documentation][psi]. Kernel version 4.20+ is required.
+
+[ksm_admin]: https://www.kernel.org/doc/html/latest/admin-guide/mm/ksm.html#ksm-daemon-sysfs-interface
+[man_proc]: http://man7.org/linux/man-pages/man5/proc.5.html
+[man_random]: https://man7.org/linux/man-pages/man4/random.4.html
+
 ## Metrics
 
 - kernel
-  - boot_time (integer, seconds since epoch, `btime`)
-  - context_switches (integer, `ctxt`)
-  - disk_pages_in (integer, `page (0)`)
-  - disk_pages_out (integer, `page (1)`)
-  - interrupts (integer, `intr`)
-  - processes_forked (integer, `processes`)
-  - entropy_avail (integer, `entropy_available`)
-  - ksm_full_scans (integer, how many times all mergeable areas have been scanned, `full_scans`)
-  - ksm_max_page_sharing (integer, maximum sharing allowed for each KSM page, `max_page_sharing`)
-  - ksm_merge_across_nodes (integer, whether pages should be merged across NUMA nodes, `merge_across_nodes`)
-  - ksm_pages_shared (integer, how many shared pages are being used, `pages_shared`)
-  - ksm_pages_sharing (integer,how many more sites are sharing them , `pages_sharing`)
-  - ksm_pages_to_scan (integer, how many pages to scan before ksmd goes to sleep, `pages_to_scan`)
-  - ksm_pages_unshared (integer, how many pages unique but repeatedly checked for merging, `pages_unshared`)
-  - ksm_pages_volatile (integer, how many pages changing too fast to be placed in a tree, `pages_volatile`)
-  - ksm_run (integer, whether ksm is running or not, `run`)
-  - ksm_sleep_millisecs (integer, how many milliseconds ksmd should sleep between scans, `sleep_millisecs`)
-  - ksm_stable_node_chains (integer, the number of KSM pages that hit the max_page_sharing limit, `stable_node_chains`)
-  - ksm_stable_node_chains_prune_millisecs (integer, how frequently KSM checks the metadata of the pages that hit the deduplication limit, `stable_node_chains_prune_millisecs`)
-  - ksm_stable_node_dups (integer, number of duplicated KSM pages, `stable_node_dups`)
-  - ksm_use_zero_pages (integer, whether empty pages should be treated specially, `use_zero_pages`)
+  - boot_time              (int) - seconds since epoch, `btime`
+  - context_switches       (int) - number of context switches `ctxt`
+  - disk_pages_in          (int) - `page (0)`
+  - disk_pages_out         (int) - `page (1)`
+  - interrupts             (int) - number of interrupts `intr`
+  - processes_forked       (int) - number of forked processes `processes`
+  - entropy_avail          (int) - entropy currently available `entropy_available`
+  - ksm_full_scans         (int) - number of scans of all mergeable areas `full_scans`
+  - ksm_max_page_sharing   (int) - maximum sharing allowed for each KSM page `max_page_sharing`
+  - ksm_merge_across_nodes (int) - flag for merging of pages across NUMA nodes `merge_across_nodes`
+  - ksm_pages_shared       (int) - number of shared pages are being used `pages_shared`
+  - ksm_pages_sharing      (int) - number of sites sharing pages `pages_sharing`
+  - ksm_pages_to_scan      (int) - number of pages to scan before ksmd  sleep `pages_to_scan`
+  - ksm_pages_unshared     (int) - number of pages unique but repeatedly checked
+                                   for merging `pages_unshared`
+  - ksm_pages_volatile     (int) - number of pages changing too fast to be
+                                   placed in a tree `pages_volatile`
+  - ksm_run                (int) - flag for ksm is running or not `run`
+  - ksm_sleep_millisecs    (int) - sleep time for ksmd between scans `sleep_millisecs`
+  - ksm_stable_node_chains (int) - number of KSM pages hitting the
+                                   max_page_sharing limit `stable_node_chains`
+  - ksm_stable_node_chains_prune_millisecs (int) - frequency for KSM checks of
+                                                   page metadata hitting the
+                                                   deduplication limit `stable_node_chains_prune_millisecs`
+  - ksm_stable_node_dups   (int) - number of duplicated KSM pages, `stable_node_dups`
+  - ksm_use_zero_pages     (int) - flag for empty pages being treated specially
+                                   `use_zero_pages`
 
 - pressure (if `psi` is included in `collect`)
   - tags:

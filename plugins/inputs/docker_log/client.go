@@ -6,21 +6,17 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	docker "github.com/docker/docker/client"
 )
 
-// This file is inherited from telegraf docker input plugin
-var (
-	version        = "1.24"
-	defaultHeaders = map[string]string{"User-Agent": "engine-api-cli-1.0"}
-)
-
 type dockerClient interface {
-	ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error)
+	// ContainerList lists the containers in the Docker environment.
+	ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error)
+	// ContainerLogs retrieves the logs of a specific container.
 	ContainerLogs(ctx context.Context, containerID string, options container.LogsOptions) (io.ReadCloser, error)
-	ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error)
+	// ContainerInspect inspects a specific container and retrieves its details.
+	ContainerInspect(ctx context.Context, containerID string) (container.InspectResponse, error)
 }
 
 func newEnvClient() (dockerClient, error) {
@@ -37,9 +33,9 @@ func newClient(host string, tlsConfig *tls.Config) (dockerClient, error) {
 	}
 	httpClient := &http.Client{Transport: transport}
 	client, err := docker.NewClientWithOpts(
-		docker.WithHTTPHeaders(defaultHeaders),
+		docker.WithHTTPHeaders(map[string]string{"User-Agent": "engine-api-cli-1.0"}),
 		docker.WithHTTPClient(httpClient),
-		docker.WithVersion(version),
+		docker.WithAPIVersionNegotiation(),
 		docker.WithHost(host))
 
 	if err != nil {
@@ -52,13 +48,17 @@ type socketClient struct {
 	client *docker.Client
 }
 
-func (c *socketClient) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
+// ContainerList lists the containers in the Docker environment.
+func (c *socketClient) ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error) {
 	return c.client.ContainerList(ctx, options)
 }
 
+// ContainerLogs retrieves the logs of a specific container.
 func (c *socketClient) ContainerLogs(ctx context.Context, containerID string, options container.LogsOptions) (io.ReadCloser, error) {
 	return c.client.ContainerLogs(ctx, containerID, options)
 }
-func (c *socketClient) ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
+
+// ContainerInspect inspects a specific container and retrieves its details.
+func (c *socketClient) ContainerInspect(ctx context.Context, containerID string) (container.InspectResponse, error) {
 	return c.client.ContainerInspect(ctx, containerID)
 }

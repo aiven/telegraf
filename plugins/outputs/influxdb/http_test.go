@@ -3,7 +3,6 @@ package influxdb_test
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"fmt"
 	"io"
 	"log"
@@ -24,6 +23,7 @@ import (
 	"github.com/influxdata/telegraf/internal"
 	"github.com/influxdata/telegraf/metric"
 	"github.com/influxdata/telegraf/plugins/outputs/influxdb"
+	"github.com/influxdata/telegraf/selfstat"
 	"github.com/influxdata/telegraf/testutil"
 )
 
@@ -44,8 +44,11 @@ func TestHTTP_EmptyConfig(t *testing.T) {
 
 func TestHTTP_MinimalConfig(t *testing.T) {
 	cfg := influxdb.HTTPConfig{
-		URL: getHTTPURL(),
+		URL:          getHTTPURL(),
+		BytesWritten: selfstat.Register("write", "bytes_written", nil),
 	}
+	defer cfg.BytesWritten.Unregister()
+
 	_, err := influxdb.NewHTTPClient(cfg)
 	require.NoError(t, err)
 }
@@ -56,7 +59,10 @@ func TestHTTP_UnsupportedScheme(t *testing.T) {
 			Scheme: "foo",
 			Host:   "localhost",
 		},
+		BytesWritten: selfstat.Register("write", "bytes_written", nil),
 	}
+	defer cfg.BytesWritten.Unregister()
+
 	_, err := influxdb.NewHTTPClient(cfg)
 	require.Error(t, err)
 }
@@ -256,12 +262,12 @@ func TestHTTP_CreateDatabase(t *testing.T) {
 					return
 				}
 			})
-
-			ctx := context.Background()
+			tt.config.BytesWritten = selfstat.Register("write", "bytes_written", nil)
+			defer tt.config.BytesWritten.Unregister()
 
 			client, err := influxdb.NewHTTPClient(tt.config)
 			require.NoError(t, err)
-			err = client.CreateDatabase(ctx, client.Database())
+			err = client.CreateDatabase(t.Context(), client.Database())
 			if tt.errFunc != nil {
 				tt.errFunc(t, err)
 			} else {
@@ -496,13 +502,13 @@ func TestHTTP_Write(t *testing.T) {
 					return
 				}
 			})
+			tt.config.BytesWritten = selfstat.Register("write", "bytes_written", nil)
+			defer tt.config.BytesWritten.Unregister()
 
 			var b bytes.Buffer
 			if tt.logFunc != nil {
 				log.SetOutput(&b)
 			}
-
-			ctx := context.Background()
 
 			m := metric.New(
 				"cpu",
@@ -516,7 +522,7 @@ func TestHTTP_Write(t *testing.T) {
 
 			client, err := influxdb.NewHTTPClient(tt.config)
 			require.NoError(t, err)
-			err = client.Write(ctx, metrics)
+			err = client.Write(t.Context(), metrics)
 			if tt.errFunc != nil {
 				tt.errFunc(t, err)
 			} else {
@@ -552,8 +558,6 @@ func TestHTTP_WritePathPrefix(t *testing.T) {
 	u, err := url.Parse(fmt.Sprintf("http://%s/x/y/z", ts.Listener.Addr().String()))
 	require.NoError(t, err)
 
-	ctx := context.Background()
-
 	m := metric.New(
 		"cpu",
 		map[string]string{},
@@ -565,16 +569,18 @@ func TestHTTP_WritePathPrefix(t *testing.T) {
 	metrics := []telegraf.Metric{m}
 
 	cfg := influxdb.HTTPConfig{
-		URL:      u,
-		Database: "telegraf",
-		Log:      testutil.Logger{},
+		URL:          u,
+		Database:     "telegraf",
+		Log:          testutil.Logger{},
+		BytesWritten: selfstat.Register("write", "bytes_written", nil),
 	}
+	defer cfg.BytesWritten.Unregister()
 
 	client, err := influxdb.NewHTTPClient(cfg)
 	require.NoError(t, err)
-	err = client.CreateDatabase(ctx, cfg.Database)
+	err = client.CreateDatabase(t.Context(), cfg.Database)
 	require.NoError(t, err)
-	err = client.Write(ctx, metrics)
+	err = client.Write(t.Context(), metrics)
 	require.NoError(t, err)
 }
 
@@ -621,8 +627,6 @@ func TestHTTP_WriteContentEncodingGzip(t *testing.T) {
 	u, err := url.Parse(fmt.Sprintf("http://%s/", ts.Listener.Addr().String()))
 	require.NoError(t, err)
 
-	ctx := context.Background()
-
 	m := metric.New(
 		"cpu",
 		map[string]string{},
@@ -639,11 +643,13 @@ func TestHTTP_WriteContentEncodingGzip(t *testing.T) {
 		Database:        "telegraf",
 		ContentEncoding: "gzip",
 		Log:             testutil.Logger{},
+		BytesWritten:    selfstat.Register("write", "bytes_written", nil),
 	}
+	defer cfg.BytesWritten.Unregister()
 
 	client, err := influxdb.NewHTTPClient(cfg)
 	require.NoError(t, err)
-	err = client.Write(ctx, metrics)
+	err = client.Write(t.Context(), metrics)
 	require.NoError(t, err)
 }
 
@@ -705,12 +711,12 @@ func TestHTTP_UnixSocket(t *testing.T) {
 					return
 				}
 			})
-
-			ctx := context.Background()
+			tt.config.BytesWritten = selfstat.Register("write", "bytes_written", nil)
+			defer tt.config.BytesWritten.Unregister()
 
 			client, err := influxdb.NewHTTPClient(tt.config)
 			require.NoError(t, err)
-			err = client.CreateDatabase(ctx, tt.config.Database)
+			err = client.CreateDatabase(t.Context(), tt.config.Database)
 			if tt.errFunc != nil {
 				tt.errFunc(t, err)
 			} else {
@@ -769,7 +775,9 @@ func TestHTTP_WriteDatabaseTagWorksOnRetry(t *testing.T) {
 		DatabaseTag:        "database",
 		ExcludeDatabaseTag: true,
 		Log:                testutil.Logger{},
+		BytesWritten:       selfstat.Register("write", "bytes_written", nil),
 	}
+	defer cfg.BytesWritten.Unregister()
 
 	client, err := influxdb.NewHTTPClient(cfg)
 	require.NoError(t, err)
@@ -787,10 +795,9 @@ func TestHTTP_WriteDatabaseTagWorksOnRetry(t *testing.T) {
 		),
 	}
 
-	ctx := context.Background()
-	err = client.Write(ctx, metrics)
+	err = client.Write(t.Context(), metrics)
 	require.NoError(t, err)
-	err = client.Write(ctx, metrics)
+	err = client.Write(t.Context(), metrics)
 	require.NoError(t, err)
 }
 
@@ -828,7 +835,7 @@ func TestDBRPTags(t *testing.T) {
 			},
 			handlerFunc: func(t *testing.T, w http.ResponseWriter, r *http.Request) {
 				require.Equal(t, "telegraf", r.FormValue("db"))
-				require.Equal(t, "", r.FormValue("rp"))
+				require.Empty(t, r.FormValue("rp"))
 				w.WriteHeader(http.StatusNoContent)
 			},
 		},
@@ -932,7 +939,7 @@ func TestDBRPTags(t *testing.T) {
 			},
 			handlerFunc: func(t *testing.T, w http.ResponseWriter, r *http.Request) {
 				require.Equal(t, "telegraf", r.FormValue("db"))
-				require.Equal(t, "", r.FormValue("rp"))
+				require.Empty(t, r.FormValue("rp"))
 				w.WriteHeader(http.StatusNoContent)
 			},
 		},
@@ -1011,12 +1018,13 @@ func TestDBRPTags(t *testing.T) {
 					return
 				}
 			})
+			tt.config.BytesWritten = selfstat.Register("write", "bytes_written", nil)
+			defer tt.config.BytesWritten.Unregister()
 
 			client, err := influxdb.NewHTTPClient(tt.config)
 			require.NoError(t, err)
 
-			ctx := context.Background()
-			err = client.Write(ctx, tt.metrics)
+			err = client.Write(t.Context(), tt.metrics)
 			require.NoError(t, err)
 		})
 	}
@@ -1101,17 +1109,20 @@ func TestDBRPTagsCreateDatabaseNotCalledOnRetryAfterForbidden(t *testing.T) {
 		URLs:        []string{u.String()},
 		Database:    "telegraf",
 		DatabaseTag: "database",
-		Log:         testutil.Logger{},
 		CreateHTTPClientF: func(config *influxdb.HTTPConfig) (influxdb.Client, error) {
 			return influxdb.NewHTTPClient(*config)
 		},
+		Log:        testutil.Logger{},
+		Statistics: selfstat.NewCollector(nil),
 	}
-	err = output.Connect()
-	require.NoError(t, err)
-	err = output.Write(metrics)
-	require.NoError(t, err)
-	err = output.Write(metrics)
-	require.NoError(t, err)
+	defer output.Statistics.UnregisterAll()
+
+	require.NoError(t, output.Init())
+	require.NoError(t, output.Connect())
+	defer output.Close()
+
+	require.NoError(t, output.Write(metrics))
+	require.NoError(t, output.Write(metrics))
 
 	require.True(t, handlers.Done(), "all handlers not called")
 }
@@ -1198,18 +1209,19 @@ func TestDBRPTagsCreateDatabaseCalledOnDatabaseNotFound(t *testing.T) {
 		CreateHTTPClientF: func(config *influxdb.HTTPConfig) (influxdb.Client, error) {
 			return influxdb.NewHTTPClient(*config)
 		},
+		Statistics: selfstat.NewCollector(nil),
 	}
+	defer output.Statistics.UnregisterAll()
 
-	err = output.Connect()
-	require.NoError(t, err)
+	require.NoError(t, output.Init())
+	require.NoError(t, output.Connect())
+	defer output.Close()
 
 	// this write fails, but we're expecting it to drop the metrics and not retry, so no error.
-	err = output.Write(metrics)
-	require.NoError(t, err)
+	require.NoError(t, output.Write(metrics))
 
 	// expects write to succeed
-	err = output.Write(metrics)
-	require.NoError(t, err)
+	require.NoError(t, output.Write(metrics))
 
 	require.True(t, handlers.Done(), "all handlers not called")
 }
@@ -1253,14 +1265,18 @@ func TestDBNotFoundShouldDropMetricWhenSkipDatabaseCreateIsTrue(t *testing.T) {
 		Database:             "telegraf",
 		DatabaseTag:          "database",
 		SkipDatabaseCreation: true,
-		Log:                  logger,
 		CreateHTTPClientF: func(config *influxdb.HTTPConfig) (influxdb.Client, error) {
 			return influxdb.NewHTTPClient(*config)
 		},
+		Log:        logger,
+		Statistics: selfstat.NewCollector(nil),
 	}
+	defer output.Statistics.UnregisterAll()
 
-	err = output.Connect()
-	require.NoError(t, err)
+	require.NoError(t, output.Init())
+	require.NoError(t, output.Connect())
+	defer output.Close()
+
 	err = output.Write(metrics)
 	require.Contains(t, logger.LastError(), "database not found")
 	require.NoError(t, err)

@@ -12,10 +12,9 @@ have permissions to query those tables.
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -146,7 +145,15 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
     - cluster (Name of the cluster [optional])
     - shard_num (Shard number in the cluster [optional])
   - fields:
-    - too_many_tries_replicas (count of replicas which have `num_tries > 1`)
+    - num_total (Number of replication queue items)
+    - num_get_part (Number of GET_PART replication queue items)
+    - num_attach_part (Number of ATTACH_PART replication queue items)
+    - num_merge_parts (Number of regular MERGE_PARTS replication queue items)
+    - num_merge_parts_ttl_delete (Number of TTLDelete MERGE_PARTS replication queue items)
+    - num_merge_parts_ttl_recompress (Number of TTLRecompress MERGE_PARTS replication queue items)
+    - num_mutate_part (Number of MUTATE_PART replication queue items)
+    - too_many_tries_replicas (Number of replication queue items with num_tries > 100)
+    - num_tries_replicas (Number of replication queue items with num_tries > 1)
 
 - clickhouse_detached_parts (see [system.detached_parts][] for details)
   - tags:

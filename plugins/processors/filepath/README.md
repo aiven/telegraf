@@ -1,39 +1,18 @@
 # Filepath Processor Plugin
 
-The `filepath` processor plugin maps certain go functions from
-[path/filepath](https://golang.org/pkg/path/filepath/) onto tag and field
-values. Values can be modified in place or stored in another key.
+This plugin allows transforming a path, using e.g. basename to extract the last
+path element, for tag and field values. Values can be modified in place or
+stored in another key.
 
-Implemented functions are:
-
-* [Base](https://golang.org/pkg/path/filepath/#Base) (accessible through `[[processors.filepath.basename]]`)
-* [Rel](https://golang.org/pkg/path/filepath/#Rel) (accessible through `[[processors.filepath.rel]]`)
-* [Dir](https://golang.org/pkg/path/filepath/#Dir) (accessible through `[[processors.filepath.dir]]`)
-* [Clean](https://golang.org/pkg/path/filepath/#Clean) (accessible through `[[processors.filepath.clean]]`)
-* [ToSlash](https://golang.org/pkg/path/filepath/#ToSlash) (accessible through `[[processors.filepath.toslash]]`)
-
-On top of that, the plugin provides an extra function to retrieve the final path
-component without its extension. This function is accessible through the
-`[[processors.filepath.stem]]` configuration item.
-
-Please note that, in this implementation, these functions are processed in the
-order that they appear above( except for `stem` that is applied in the first
-place).
-
-Specify the `tag` and/or `field` that you want processed in each section and
-optionally a `dest` if you want the result stored in a new tag or field.
-
-If you plan to apply multiple transformations to the same `tag`/`field`, bear in
-mind the processing order stated above.
-
-Telegraf minimum version: Telegraf 1.15.0
+⭐ Telegraf v1.15.0
+🏷️ transformation
+💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -73,6 +52,14 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 ```
 
 ## Considerations
+
+### Processing order
+
+This plugin processes the specified functions in the order they appear in
+the configuration. One exceptition is the `stem` section which is applied first.
+
+If you plan to apply multiple transformations to the same `tag`/`field`, bear in
+mind the processing order stated above.
 
 ### Clean Automatic Invocation
 
@@ -193,14 +180,15 @@ injected for every file.
 
 Scenario:
 
-* A log file `/var/log/myjobs/mysql_backup.log`, containing logs for a job execution. Whenever the job ends, a line is
-written to the log file following this format: `2020-04-05 11:45:21 total time execution: 70 seconds`
-* We want to generate a measurement that captures the duration of the script as a field and includes the `path` as a
-tag
-  * We are interested in the filename without its extensions, since it might be enough information for plotting our
-    execution times in a dashboard
-  * Just in case, we don't want to override the original path (if for some reason we end up having duplicates we might
-    want this information)
+* A log file `/var/log/myjobs/mysql_backup.log`, containing logs for a job
+  execution. Whenever the job ends, a line is written to the log file following
+  this format: `2020-04-05 11:45:21 total time execution: 70 seconds`
+* We want to generate a measurement that captures the duration of the script as
+  a field and includes the `path` as a tag
+  * We are interested in the filename without its extensions, since it might be
+    enough information for plotting our execution times in a dashboard
+  * Just in case, we don't want to override the original path (if for some
+    reason we end up having duplicates we might want this information)
 
 For this purpose, we will use the `tail` input plugin, the `grok` parser plugin
 and the `filepath` processor.

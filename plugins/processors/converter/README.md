@@ -1,29 +1,23 @@
 # Converter Processor Plugin
 
-The converter processor is used to change the type of tag or field values. In
-addition to changing field types it can convert between fields and tags.
+This plugin allows transforming tags into fields or timestamps, and converting
+fields into tags or timestamps. The plugin furthermore allows to change the field
+type.
 
-Values that cannot be converted are dropped.
+> [!IMPORTANT]
+> When converting tags to fields, take care to ensure the series is still
+> uniquely identifiable. Fields with the same series key (measurement + tags)
+> will overwrite one another.
 
-**Note:** When converting tags to fields, take care to ensure the series is
-still uniquely identifiable. Fields with the same series key (measurement +
-tags) will overwrite one another.
-
-**Note on large strings being converted to numeric types:** When converting a
-string value to a numeric type, precision may be lost if the number is too
-large. The largest numeric type this plugin supports is `float64`, and if a
-string 'number' exceeds its size limit, accuracy may be lost.
-
-**Note on multiple measurement or timestamps:** Users can provide multiple
-tags or fields to use as the measurement name or timestamp. However, note that
-the order in the array is not guaranteed!
+⭐ Telegraf v1.7.0
+🏷️ transformation
+💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -67,8 +61,8 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
     boolean = []
     float = []
 
-    ## Optional field to use for converting base64 encoding of IEEE 754 Float32 values 
-    ## i.e. data_json_content_state_openconfig-platform-psu:output-power":"RKeAAA=="
+    ## Optional field to use for converting base64 encoding of IEEE 754 Float32 values
+    ## (for example, data_json_content_state_openconfig-platform-psu:output-power":"RKeAAA==")
     ## into a float32 value 1340
     # base64_ieee_float32 = []
 
@@ -80,6 +74,15 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
     ## format. It is required, when using the timestamp option.
     # timestamp_format = ""
 ```
+
+When converting types, values that cannot be converted are dropped.
+
+When converting a string value to a numeric type, precision may be lost if the
+number is too large. The largest numeric type this plugin supports is `float64`,
+and if a string 'number' exceeds its size limit, accuracy may be lost.
+
+Users can provide multiple tags or fields to use as the measurement name or
+timestamp. However, note that the order in the array is not guaranteed!
 
 ### Example
 

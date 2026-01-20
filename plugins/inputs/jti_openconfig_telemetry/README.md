@@ -1,16 +1,19 @@
-# JTI OpenConfig Telemetry Input Plugin
+# Juniper Telemetry Input Plugin
 
-This plugin reads Juniper Networks implementation of OpenConfig telemetry data
-from listed sensors using Junos Telemetry Interface. Refer to
-[openconfig.net](http://openconfig.net/) for more details about OpenConfig and
-[Junos Telemetry Interface (JTI)][1].
+This service plugin reads [OpenConfig][openconfig] telemetry data via the
+[Junos Telemetry Interface (JTI)][jti] from configured from listed sensors.
 
-[1]: https://www.juniper.net/documentation/en_US/junos/topics/concept/junos-telemetry-interface-oveview.html
+⭐ Telegraf v1.7.0
+🏷️ network, iot
+💻 all
+
+[openconfig]: http://openconfig.net/
+[jti]: https://www.juniper.net/documentation/en_US/junos/topics/concept/junos-telemetry-interface-oveview.html
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -20,10 +23,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

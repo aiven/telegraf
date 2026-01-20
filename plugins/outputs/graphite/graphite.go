@@ -47,7 +47,7 @@ type Graphite struct {
 	common_tls.ClientConfig
 
 	connections []connection
-	serializer  *graphite.GraphiteSerializer
+	serializer  *graphite.Serializer
 }
 
 func (*Graphite) SampleConfig() string {
@@ -55,7 +55,7 @@ func (*Graphite) SampleConfig() string {
 }
 
 func (g *Graphite) Init() error {
-	s := &graphite.GraphiteSerializer{
+	s := &graphite.Serializer{
 		Prefix:          g.Prefix,
 		Template:        g.Template,
 		StrictRegex:     g.GraphiteStrictRegex,
@@ -200,7 +200,7 @@ func (g *Graphite) checkEOF(conn net.Conn) error {
 	}
 	// Log non-timeout errors and close.
 	var netErr net.Error
-	if !(errors.As(err, &netErr) && netErr.Timeout()) {
+	if !errors.As(err, &netErr) || !netErr.Timeout() {
 		g.Log.Debugf("conn %s checkEOF .conn.Read returned err != EOF, which is unexpected.  closing conn. error: %s", conn, err)
 		err = conn.Close()
 		g.Log.Debugf("Failed to close the connection: %v", err)
@@ -210,8 +210,6 @@ func (g *Graphite) checkEOF(conn net.Conn) error {
 	return nil
 }
 
-// Choose a random server in the cluster to write to until a successful write
-// occurs, logging each unsuccessful. If all servers fail, return error.
 func (g *Graphite) Write(metrics []telegraf.Metric) error {
 	// Prepare data
 	var batch []byte

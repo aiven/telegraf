@@ -1,26 +1,20 @@
 # Procstat Input Plugin
 
-The procstat plugin can be used to monitor the system resource usage of one or
-more processes.  The procstat_lookup metric displays the query information,
-specifically the number of PIDs returned on a search
+This plugin allows to monitor the system resource usage of one or more
+processes. The plugin provides metrics about the individual processes as well as
+accumulated metrics on the number of PIDs returned on a search. Processes can
+be filtered e.g. by regular expressions on the command, the user owning the
+process or the service that started the process.
 
-Processes can be selected for monitoring using one of several methods:
-
-- pidfile
-- exe
-- pattern
-- user
-- systemd_unit
-- cgroup
-- supervisor_unit
-- win_service
+⭐ Telegraf v0.2.0
+🏷️ system
+💻 all
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -77,6 +71,8 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ##   dest      -- destination address of the process socket (non-unix sockets)
   ##   dest_port -- destination port of the process socket (non-unix sockets)
   ##   name      -- name of the process socket (unix sockets only)
+  ## Available for procstat_lookup:
+  ##   level     -- level of the process filtering
   # tag_with = []
 
   ## Properties to collect
@@ -135,8 +131,9 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 ### Windows support
 
-Preliminary support for Windows has been added, however you may prefer using
-the `win_perf_counters` input plugin as a more mature alternative.
+The plugin reports process information on Windows, however if you need more
+in-depth information about the process you may prefer using the
+`win_perf_counters` or `win_wmi` input plugins.
 
 ### Darwin specifics
 
@@ -148,6 +145,13 @@ If you use this plugin with `supervisor_units` *and* `pattern` on Darwin, you
 Some files or directories may require elevated permissions. As such a user may
 need to provide telegraf with higher levels of permissions to access and produce
 metrics.
+
+### Remote users on Posix systems
+
+To resolve usernames of processes owned by remote users e.g. LDAP or NIS the
+plugin relies on the `id` command. This command must be available on the system,
+in the PATH and executable by Telegraf, otherwise the username cannot be
+resolved and the user-ID is used instead.
 
 ## Metrics
 
@@ -176,6 +180,8 @@ Below are an example set of tags and fields:
     - cgroup_full (when cgroup or systemd_unit is used with glob)
     - supervisor_unit (when defined)
     - win_service (when defined)
+    - parent_pid (for child processes)
+    - child_level (for child processes)
   - fields:
     - child_major_faults (int)
     - child_minor_faults (int)

@@ -1,22 +1,24 @@
 # Arista LANZ Consumer Input Plugin
 
-This plugin provides a consumer for use with Arista Networks’ Latency Analyzer
-(LANZ)
+This service plugin consumes messages from the
+[Arista Networks’ Latency Analyzer (LANZ)][lanz] by receiving the datastream
+on TCP (usually through port 50001) on the switch's management IP.
 
-Metrics are read from a stream of data via TCP through port 50001 on the
-switches management IP. The data is in Protobuffers format. For more information
-on Arista LANZ
+> [!NOTE]
+> You will need to configure LANZ and enable streaming LANZ data, see the
+> [documentation][config_lanz] for more details.
 
-- <https://www.arista.com/en/um-eos/eos-latency-analyzer-lanz>
+⭐ Telegraf v1.14.0
+🏷️ network
+💻 all
 
-This plugin uses Arista's sdk.
-
-- <https://github.com/aristanetworks/goarista>
+[lanz]: https://www.arista.com/en/um-eos/eos-latency-analyzer-lanz
+[config_lanz]: https://www.arista.com/en/um-eos/eos-section-44-3-configuring-lanz
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -26,10 +28,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -45,15 +46,9 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   ]
 ```
 
-You will need to configure LANZ and enable streaming LANZ data.
-
-- <https://www.arista.com/en/um-eos/eos-section-44-3-configuring-lanz>
-- <https://www.arista.com/en/um-eos/eos-section-44-3-configuring-lanz#ww1149292>
-
 ## Metrics
 
-For more details on the metrics see
-<https://github.com/aristanetworks/goarista/blob/master/lanz/proto/lanz.proto>
+For more details on the metrics see the [protocol buffer definition][proto].
 
 - lanz_congestion_record:
   - tags:
@@ -81,6 +76,8 @@ For more details on the metrics see
     - timestamp   (integer)
     - buffer_size (integer)
     - duration    (integer)
+
+[proto]: https://github.com/aristanetworks/goarista/blob/master/lanz/proto/lanz.proto
 
 ## Sample Queries
 

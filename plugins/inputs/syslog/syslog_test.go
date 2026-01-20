@@ -82,6 +82,23 @@ func TestReadTimeoutWarning(t *testing.T) {
 	require.Contains(t, warnings, "W! [] "+readTimeoutMsg)
 }
 
+func TestMessageSizeDefault(t *testing.T) {
+	plugin := &Syslog{Log: testutil.Logger{}}
+	require.NoError(t, plugin.Init())
+
+	require.Equal(t, config.Size(0), plugin.MaxMessageLength)
+}
+
+func TestMessageSizeCustom(t *testing.T) {
+	plugin := &Syslog{
+		MaxMessageLength: config.Size(16384),
+		Log:              testutil.Logger{},
+	}
+	require.NoError(t, plugin.Init())
+
+	require.Equal(t, config.Size(16384), plugin.MaxMessageLength)
+}
+
 func TestUnixgram(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test as unixgram is not supported on Windows")
@@ -268,20 +285,26 @@ func TestCases(t *testing.T) {
 			require.Eventually(t, func() bool {
 				return int(acc.NMetrics()) >= len(expected)
 			}, 3*time.Second, 100*time.Millisecond)
+
+			// Check for errors
+			if expectedError != "" {
+				require.Eventually(t, func() bool {
+					acc.Lock()
+					defer acc.Unlock()
+					for _, err := range acc.Errors {
+						if strings.Contains(err.Error(), expectedError) {
+							return true
+						}
+					}
+					return false
+				}, 3*time.Second, 100*time.Millisecond, "expected error was not found")
+			}
 			plugin.Stop()
 
 			actual := acc.GetTelegrafMetrics()
 			testutil.RequireMetricsEqual(t, expected, actual, testutil.IgnoreTime())
 
-			// Check for errors
-			if expectedError != "" {
-				require.NotEmpty(t, acc.Errors)
-				var found bool
-				for _, err := range acc.Errors {
-					found = found || strings.Contains(err.Error(), expectedError)
-				}
-				require.Truef(t, found, "expected error %q not found in errors %v", expectedError, acc.Errors)
-			} else {
+			if expectedError == "" {
 				require.Empty(t, acc.Errors)
 			}
 		})

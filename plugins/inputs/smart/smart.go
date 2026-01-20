@@ -59,7 +59,7 @@ var (
 	//   1 Raw_Read_Error_Rate     PO-RC-+  200   200   051    -    30
 	//   5 Reallocated_Sector_Ct   POS-C-+  200   200   140    -    0
 	// 192 Power-Off_Retract_Count -O-RCK+  200   200   000    -    4
-	attribute = regexp.MustCompile(`^\s*([0-9]+)\s(\S+)\s+([-P][-O][-S][-R][-C][-K])[\+]?\s+([0-9]+)\s+([0-9]+)\s+([0-9-]+)\s+([-\w]+)\s+([\w\+\.]+).*$`)
+	attribute = regexp.MustCompile(`^\s*([0-9]+)\s(\S+)\s+([-P][-O][-S][-R][-C][-K])[\+]?\s+([0-9]+)\s+([0-9]+)\s+([0-9-]+)\s+([-\w]+)\s+([\w\+\.\/]+).*$`)
 
 	//  Additional Smart Log for NVME device:nvme0 namespace-id:ffffffff
 	// nvme version 1.14+ metrics:
@@ -369,7 +369,6 @@ const intelVID = "0x8086"
 
 // Smart plugin reads metrics from storage devices supporting S.M.A.R.T.
 type Smart struct {
-	Path              string          `toml:"path" deprecated:"1.16.0;1.35.0;use 'path_smartctl' instead"`
 	PathSmartctl      string          `toml:"path_smartctl"`
 	PathNVMe          string          `toml:"path_nvme"`
 	Nocheck           string          `toml:"nocheck"`
@@ -396,11 +395,6 @@ func (*Smart) SampleConfig() string {
 }
 
 func (m *Smart) Init() error {
-	// if deprecated `path` (to smartctl binary) is provided in config and `path_smartctl` override does not exist
-	if len(m.Path) > 0 && len(m.PathSmartctl) == 0 {
-		m.PathSmartctl = m.Path
-	}
-
 	// if `path_smartctl` is not provided in config, try to find smartctl binary in PATH
 	if len(m.PathSmartctl) == 0 {
 		//nolint:errcheck // error handled later
@@ -735,11 +729,15 @@ func (m *Smart) gatherDisk(acc telegraf.Accumulator, device string, wg *sync.Wai
 	outStr := string(out)
 
 	// Ignore all exit statuses except if it is a command line parse error
-	exitStatus, er := exitStatus(e)
+	cmdExitStatus, er := exitStatus(e)
 	if er != nil {
 		acc.AddError(fmt.Errorf("failed to run command '%s %s': %w - %s", m.PathSmartctl, strings.Join(args, " "), e, outStr))
 		return
 	}
+
+	// Initialize device exit status with command exit status (don't assume active or standby)
+	// Will be adjusted based on detected power mode during parsing
+	deviceExitStatus := cmdExitStatus
 
 	deviceTags := make(map[string]string)
 	if m.TagWithDeviceType {
@@ -752,8 +750,8 @@ func (m *Smart) gatherDisk(acc telegraf.Accumulator, device string, wg *sync.Wai
 		deviceNode := strings.Split(device, " ")[0]
 		deviceTags["device"] = path.Base(deviceNode)
 	}
+
 	deviceFields := make(map[string]interface{})
-	deviceFields["exit_status"] = exitStatus
 
 	scanner := bufio.NewScanner(strings.NewReader(outStr))
 
@@ -796,9 +794,21 @@ func (m *Smart) gatherDisk(acc telegraf.Accumulator, device string, wg *sync.Wai
 		// otherwise nothing is found so nothing is printed (NVMe does not show power)
 		if power := powermodeInfo.FindStringSubmatch(line); len(power) > 1 {
 			deviceTags["power"] = power[1]
+			// Override exit status based on detected power mode
+			// Only ACTIVE or IDLE are considered operational states (exit_status = 0)
+			// All other states (STANDBY, SLEEPING, etc.) keep the command's exit status
+			if power[1] == "ACTIVE" || power[1] == "IDLE" {
+				deviceExitStatus = 0
+			}
 		} else {
+			// Check for explicit standby message
 			if power := standbyInfo.FindStringSubmatch(line); len(power) > 1 {
 				deviceTags["power"] = power[1]
+				// Only set exit_status=0 for explicitly known operational states
+				// Keep command's exit status for STANDBY and any other states
+				if power[1] == "ACTIVE" || power[1] == "IDLE" {
+					deviceExitStatus = 0
+				}
 			}
 		}
 
@@ -823,7 +833,7 @@ func (m *Smart) gatherDisk(acc telegraf.Accumulator, device string, wg *sync.Wai
 				tags["name"] = attr[2]
 				tags["flags"] = attr[3]
 
-				fields["exit_status"] = exitStatus
+				fields["exit_status"] = deviceExitStatus
 				if i, err := strconv.ParseInt(attr[4], 10, 64); err == nil {
 					fields["value"] = i
 				}
@@ -885,6 +895,12 @@ func (m *Smart) gatherDisk(acc telegraf.Accumulator, device string, wg *sync.Wai
 			}
 		}
 	}
+
+	// Set the final device exit status
+	// - 0 if power mode is ACTIVE or IDLE
+	// - cmdExitStatus for STANDBY or other power states
+	// - cmdExitStatus if no power mode was detected (backward compatibility)
+	deviceFields["exit_status"] = deviceExitStatus
 	acc.AddFields("smart_device", deviceFields, deviceTags)
 }
 
@@ -923,10 +939,19 @@ func difference(a, b []string) []string {
 	return diff
 }
 
-func parseRawValue(rawVal string) (int64, error) {
+func parseRawValue(rawVal string) (interface{}, error) {
 	// Integer
 	if i, err := strconv.ParseInt(rawVal, 10, 64); err == nil {
 		return i, nil
+	}
+
+	// raw attribute with two values, e.g. error rate: error_count/total_count
+	if numerator, denominator, found := strings.Cut(rawVal, "/"); found {
+		n, nerr := strconv.ParseFloat(numerator, 64)
+		d, derr := strconv.ParseFloat(denominator, 64)
+		if nerr == nil && derr == nil {
+			return n / d, nil
+		}
 	}
 
 	// Duration: 65h+33m+09.259s

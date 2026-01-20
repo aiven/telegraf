@@ -1,22 +1,25 @@
 # Template Processor Plugin
 
-The `template` processor applies a Go template to metrics to generate a new
-tag.  The primary use case of this plugin is to create a tag that can be used
-for dynamic routing to multiple output plugins or using an output specific
-routing option.
+This plugin applies templates to metrics for generating a new tag. The primary
+use case of this plugin is to create a tag that can be used for dynamic routing
+to multiple output plugins or using an output specific routing option.
 
 The template has access to each metric's measurement name, tags, fields, and
-timestamp using the [interface in `/template_metric.go`](template_metric.go).
-[Sprig](http://masterminds.github.io/sprig/) helper functions are available.
+timestamp. Templates follow the [Go Template syntax][template] and may contain
+[Sprig functions][sprig].
 
-Read the full [Go Template Documentation][].
+⭐ Telegraf v1.14.0
+🏷️ transformation
+💻 all
+
+[template]: https://golang.org/pkg/text/template/
+[sprig]: http://masterminds.github.io/sprig/
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -130,5 +133,3 @@ More advanced example, which might make more sense:
 - cpu,hostname=localhost time_idle=42
 + cpu,hostname=localhost,metric=cpu\ map[hostname:localhost]\ map[time_idle:42]\ 1257894000000000000 time_idle=42
 ```
-
-[Go Template Documentation]: https://golang.org/pkg/text/template/

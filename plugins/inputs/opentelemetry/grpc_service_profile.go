@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	service "go.opentelemetry.io/proto/otlp/collector/profiles/v1experimental"
+	service "go.opentelemetry.io/proto/otlp/collector/profiles/v1development"
+	otlp "go.opentelemetry.io/proto/otlp/profiles/v1development"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/influxdata/telegraf"
@@ -51,6 +52,7 @@ func newProfileService(acc telegraf.Accumulator, logger telegraf.Logger, dimensi
 	}, nil
 }
 
+// Export processes and exports the received profile data.
 func (s *profileService) Export(_ context.Context, req *service.ExportProfilesServiceRequest) (*service.ExportProfilesServiceResponse, error) {
 	// Output the received message for debugging
 	buf, err := protojson.Marshal(req)
@@ -59,6 +61,8 @@ func (s *profileService) Export(_ context.Context, req *service.ExportProfilesSe
 	} else {
 		s.logger.Debugf("received profile: %s", string(buf))
 	}
+
+	pd := req.Dictionary
 
 	for _, rp := range req.ResourceProfiles {
 		// Extract the requested attributes that should be added as tags
@@ -71,56 +75,59 @@ func (s *profileService) Export(_ context.Context, req *service.ExportProfilesSe
 
 		for _, sp := range rp.ScopeProfiles {
 			for _, p := range sp.Profiles {
-				for i, sample := range p.Profile.Sample {
-					for j := sample.LocationsStartIndex; j < sample.LocationsStartIndex+sample.LocationsLength; j++ {
-						for validx, value := range sample.Value {
-							loc := p.Profile.Location[j]
-							locations := make([]string, 0, len(loc.Line))
-							for _, line := range loc.Line {
-								f := p.Profile.Function[line.FunctionIndex]
-								fileloc := p.Profile.StringTable[f.Filename]
+				for i, sample := range p.Samples {
+					stack := pd.StackTable[sample.StackIndex]
+					for _, locIdx := range stack.LocationIndices {
+						for validx, value := range sample.Values {
+							loc := pd.LocationTable[locIdx]
+							locations := make([]string, 0, len(loc.Lines))
+							for _, line := range loc.Lines {
+								f := pd.FunctionTable[line.FunctionIndex]
+								fileloc := pd.StringTable[f.FilenameStrindex]
 								if f.StartLine > 0 {
 									if fileloc != "" {
 										fileloc += " "
 									}
 									fileloc += "line " + strconv.FormatInt(f.StartLine, 10)
 								}
-								l := p.Profile.StringTable[f.Name]
+								l := pd.StringTable[f.NameStrindex]
 								if fileloc != "" {
 									l += "(" + fileloc + ")"
 								}
 								locations = append(locations, l)
 							}
-							mapping := p.Profile.Mapping[loc.MappingIndex]
+							mapping := &otlp.Mapping{}
+							// MappingIndex of 0 means unknown or unapplicable mapping, as the
+							// first entry in the  mapping table is always a null mapping.
+							if loc.MappingIndex != 0 {
+								mapping = pd.MappingTable[loc.MappingIndex]
+							}
 							tags := map[string]string{
 								"profile_id":       hex.EncodeToString(p.ProfileId),
 								"sample":           strconv.Itoa(i),
-								"sample_name":      p.Profile.StringTable[p.Profile.PeriodType.Type],
-								"sample_unit":      p.Profile.StringTable[p.Profile.PeriodType.Unit],
-								"sample_type":      p.Profile.StringTable[p.Profile.SampleType[validx].Type],
-								"sample_type_unit": p.Profile.StringTable[p.Profile.SampleType[validx].Unit],
+								"sample_name":      pd.StringTable[p.PeriodType.TypeStrindex],
+								"sample_unit":      pd.StringTable[p.PeriodType.UnitStrindex],
+								"sample_type":      pd.StringTable[p.SampleType.TypeStrindex],
+								"sample_type_unit": pd.StringTable[p.SampleType.UnitStrindex],
 								"address":          "0x" + strconv.FormatUint(loc.Address, 16),
 							}
 							for k, v := range attrtags {
 								tags[k] = v
 							}
 							fields := map[string]interface{}{
-								"start_time_unix_nano": p.StartTimeUnixNano,
-								"end_time_unix_nano":   p.EndTimeUnixNano,
+								"start_time_unix_nano": int64(p.TimeUnixNano),
+								"end_time_unix_nano":   int64(p.TimeUnixNano + p.DurationNano),
 								"location":             strings.Join(locations, ","),
-								"frame_type":           p.Profile.StringTable[loc.TypeIndex],
-								"stack_trace_id":       p.Profile.StringTable[sample.StacktraceIdIndex],
 								"memory_start":         mapping.MemoryStart,
 								"memory_limit":         mapping.MemoryLimit,
-								"filename":             p.Profile.StringTable[mapping.Filename],
+								"filename":             pd.StringTable[mapping.FilenameStrindex],
 								"file_offset":          mapping.FileOffset,
-								"build_id":             p.Profile.StringTable[mapping.BuildId],
-								"build_id_type":        mapping.BuildIdKind.String(),
 								"value":                value,
 							}
-							for _, idx := range sample.Attributes {
-								attr := p.Profile.AttributeTable[idx]
-								fields[attr.Key] = attr.GetValue().Value
+							for _, idx := range sample.AttributeIndices {
+								attr := pd.AttributeTable[idx]
+								key := pd.StringTable[attr.KeyStrindex]
+								fields[key] = attr.GetValue().Value
 							}
 							ts := sample.TimestampsUnixNano[validx]
 							s.acc.AddFields("profiles", fields, tags, time.Unix(0, int64(ts)))

@@ -593,21 +593,25 @@ Parameters that can be used with any aggregator plugin:
 - **period**: The period on which to flush & clear each aggregator. All
   metrics that are sent with timestamps outside of this period will be ignored
   by the aggregator.
+  The default period is set to 30 seconds.
 - **delay**: The delay before each aggregator is flushed. This is to control
   how long for aggregators to wait before receiving metrics from input
   plugins, in the case that aggregators are flushing and inputs are gathering
   on the same interval.
+  The default delay is set to 100 ms.
 - **grace**: The duration when the metrics will still be aggregated
   by the plugin, even though they're outside of the aggregation period. This
   is needed in a situation when the agent is expected to receive late metrics
   and it's acceptable to roll them up into next aggregation period.
+  The default grace duration is set to 0 s.
 - **drop_original**: If true, the original metric will be dropped by the
   aggregator and will not get sent to the output plugins.
 - **name_override**: Override the base name of the measurement.  (Default is
   the name of the input).
 - **name_prefix**: Specifies a prefix to attach to the measurement name.
 - **name_suffix**: Specifies a suffix to attach to the measurement name.
-- **tags**: A map of tags to apply to the measurement - behavior varies based on aggregator.
+- **tags**: A map of tags to apply to the measurement - behavior varies based on
+            aggregator.
 - **log_level**: Override the log-level for this plugin. Possible values are
   `error`, `warn`, `info` and `debug`.
 
@@ -700,21 +704,21 @@ is tested on metrics after they have passed the `tagpass` test.
 A ["Common Expression Language"][CEL] (CEL) expression with boolean result where
 `true` will allow the metric to pass, otherwise the metric is discarded. This
 filter expression is more general compared to e.g. `namepass` and also allows
-for time-based filtering. An introduction to the CEL language can be found
-[here][CEL intro]. Further details, such as available functions and expressions,
-are provided in the [language definition][CEL lang] as well as in the
-[extension documentation][CEL ext].
+for time-based filtering. Further details, such as available functions and
+expressions, are provided in the [language definition][CEL lang] as well as in
+the [extension documentation][CEL ext] or the
+[CEL language introduction][CEL intro].
 
-**NOTE:** Expressions that may be valid and compile, but fail at runtime will
-result in the expression reporting as `true`. The metrics will pass through
-as a result. An example is when reading a non-existing field. If this happens,
-the evaluation is aborted, an error is logged, and the expression is reported as
+Expressions that may be valid and compile, but fail at runtime will result in
+the expression reporting as `true`. The metrics will pass through as a result.
+An example is when reading a non-existing field. If this happens, the
+evaluation is aborted, an error is logged, and the expression is reported as
 `true`, so the metric passes.
 
-> NOTE: As CEL is an *interpreted* languguage, this type of filtering is much
-> slower compared to `namepass`/`namedrop` and friends. So consider to use the
-> more restricted filter options where possible in case of high-throughput
-> scenarios.
+> [!NOTE]
+> As CEL is an *interpreted* language, this type of filtering is much slower
+> compared to `namepass`/`namedrop` and friends. So consider to use the more
+> restricted filter options where possible in case of high-throughput scenarios.
 
 [CEL]:https://github.com/google/cel-go/tree/master
 [CEL intro]: https://codelabs.developers.google.com/codelabs/cel-go
@@ -896,6 +900,55 @@ select the output.  The tag is removed in the outputs before writing with `tagex
     influxdb_database = "other"
 ```
 
+## Plugin selection via labels and selectors
+
+You can control which plugin instances are enabled by decorating plugins with
+labels in their config and passing one or more selectors on the command line.
+
+### Selectors
+
+Provide selectors with one or more `--select` flags when starting Telegraf. Each
+`--select` value is a semicolon-separated list of key=value pairs:
+
+```text
+<key>=<value>[;<key>=<value>]
+```
+
+- Pairs in a single `--select` value are combined with logical AND (all must
+match).
+- Multiple `--select` flags are combined with logical OR (a plugin is enabled if
+it matches any selector set).
+
+Selectors support simple glob patterns in values (for example `region=us-*`).
+
+Example:
+
+```console
+telegraf --config config.conf --config-directory directory/ \
+  --select="app=payments;region=us-*" \
+  --select="env=prod" \
+  --watch-config --print-plugin-config-source=true
+```
+
+### Labels
+
+Add an optional `labels` table to a plugin, similar to `tags`. Keys and values
+are plain strings.
+
+Example:
+
+```toml
+[[inputs.cpu]]
+  [inputs.cpu.labels]
+    app = "payments"
+    region = "us-east"
+    env = "prod"
+```
+
+Telegraf matches the command-line selectors against a plugin's labels to decide
+whether that plugin instance should be enabled. For more details on the syntax
+and matching criteria refer, [labels selectors spec][tsd010].
+
 ## Transport Layer Security (TLS)
 
 Reference the detailed [TLS][] documentation.
@@ -913,3 +966,4 @@ Reference the detailed [TLS][] documentation.
 [TLS]: /docs/TLS.md
 [glob pattern]: https://github.com/gobwas/glob#syntax
 [flags]: /docs/COMMANDS_AND_FLAGS.md
+[tsd010]: /docs/specs/tsd-010-labels-and-selectors.md

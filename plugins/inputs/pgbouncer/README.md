@@ -1,18 +1,24 @@
 # PgBouncer Input Plugin
 
-The `pgbouncer` plugin provides metrics for your PgBouncer load balancer.
+This plugin collects metrics from a [PgBouncer load balancer][pgbouncer]
+instance. Check the [documentation][metric_docs] for available metrics and their
+meaning.
 
-More information about the meaning of these metrics can be found in the
-[PgBouncer Documentation](https://pgbouncer.github.io/usage.html).
+> [!NOTE]
+> This plugin requires PgBouncer v1.5+.
 
-- PgBouncer minimum tested version: 1.5
+⭐ Telegraf v1.8.0
+🏷️ server, web
+💻 all
+
+[pgbouncer]: https://pgbouncer.github.io
+[metric_docs]: https://pgbouncer.github.io/usage.html
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -36,15 +42,13 @@ See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
   # show_commands = ["stats", "pools"]
 ```
 
-### `address`
-
-Specify address via a postgresql connection string:
+To specify the `address` use either a PostgreSQL connection string:
 
 ```text
 host=/run/postgresql port=6432 user=telegraf database=pgbouncer
 ```
 
-Or via an url matching:
+or via an URL of the following form:
 
 ```text
 postgres://[pqgotest[:password]]@host:port[/dbname]?sslmode=[disable|verify-ca|verify-full]
@@ -52,9 +56,9 @@ postgres://[pqgotest[:password]]@host:port[/dbname]?sslmode=[disable|verify-ca|v
 
 All connection parameters are optional.
 
-Without the dbname parameter, the driver will default to a database with the
-same name as the user.  This dbname is just for instantiating a connection with
-the server and doesn't restrict the databases we are trying to grab metrics for.
+Without the `dbname` parameter, the driver will default to a database with the
+same name as the user. The `dbname` is for instantiating a connection with the
+server only and doesn't restrict access to the databases queried.
 
 ## Metrics
 

@@ -46,7 +46,9 @@ var (
 		"I":  0x05, // Integer (16 bit)
 		"DW": 0x06, // Double Word (32 bit)
 		"DI": 0x07, // Double integer (32 bit)
+		"LI": 0x06, // Long integer (64 bit)
 		"R":  0x08, // IEEE 754 real (32 bit)
+		"LR": 0x06, // IEEE 754 double (64-bit)
 		// see https://support.industry.siemens.com/cs/document/36479/date_and_time-format-for-s7-?dti=0&lc=en-DE
 		"DT": 0x0F, // Date and time (7 byte)
 	}
@@ -67,6 +69,7 @@ type S7comm struct {
 	ConnectionType  string             `toml:"connection_type"`
 	BatchMaxSize    int                `toml:"pdu_size"`
 	Timeout         config.Duration    `toml:"timeout"`
+	IdleTimeout     config.Duration    `toml:"idle_timeout"`
 	DebugConnection bool               `toml:"debug_connection" deprecated:"1.35.0;use 'log_level' 'trace' instead"`
 	Configs         []metricDefinition `toml:"metric"`
 	Log             telegraf.Logger    `toml:"-"`
@@ -138,6 +141,7 @@ func (s *S7comm) Init() error {
 	// Create handler for the connection
 	s.handler = gos7.NewTCPClientHandlerWithConnectType(s.Server, s.Rack, s.Slot, connectionTypeMap[s.ConnectionType])
 	s.handler.Timeout = time.Duration(s.Timeout)
+	s.handler.IdleTimeout = time.Duration(s.IdleTimeout)
 	if s.Log.Level().Includes(telegraf.Trace) || s.DebugConnection { // for backward compatibility
 		s.handler.Logger = log.New(&tracelogger{log: s.Log}, "", 0)
 	}
@@ -360,12 +364,15 @@ func handleFieldAddress(address string) (*gos7.S7DataItem, converterFunc, error)
 		buflen = 2
 	case "DW", "DI", "R": // 32-bit types
 		buflen = 4
+	case "LR", "LI": // 64-bit types
+		buflen = 8
+		amount = 2
 	case "DT": // 7-byte
 		buflen = 7
 	case "S":
-		amount = extra
 		// Extra bytes as the first byte is the max-length of the string and
 		// the second byte is the actual length of the string.
+		amount = extra + 2
 		buflen = extra + 2
 	default:
 		return nil, nil, errors.New("invalid data type")
@@ -426,6 +433,7 @@ func init() {
 			Slot:         -1,
 			BatchMaxSize: 20,
 			Timeout:      config.Duration(10 * time.Second),
+			IdleTimeout:  config.Duration(60 * time.Second),
 		}
 	})
 }

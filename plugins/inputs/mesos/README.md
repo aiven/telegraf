@@ -1,16 +1,20 @@
-# Mesos Input Plugin
+# Apache Mesos Input Plugin
 
-This input plugin gathers metrics from Mesos.  For more information, please
-check the [Mesos Observability Metrics][1] page.
+This plugin gathers metrics from [Apache Mesos][mesos] instances. For more
+information, please check the [Mesos Observability Metrics][monitoring] page.
 
-[1]: http://mesos.apache.org/documentation/latest/monitoring/
+⭐ Telegraf v0.10.3
+🏷️ containers
+💻 all
+
+[mesos]:https://mesos.apache.org/
+[monitoring]: http://mesos.apache.org/documentation/latest/monitoring/
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

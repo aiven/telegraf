@@ -1,15 +1,20 @@
 # PostgreSQL Input Plugin
 
-The `postgresql` plugin provides metrics for your PostgreSQL Server instance.
+This plugin provides metrics for a [PostgreSQL][postgres] Server instance.
 Recorded metrics are lightweight and use Dynamic Management Views supplied
 by PostgreSQL.
 
+⭐ Telegraf v0.10.3
+🏷️ datastore
+💻 all
+
+[postgres]: https://www.postgresql.org/
+
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

@@ -1,16 +1,22 @@
 # Memory Input Plugin
 
-The mem plugin collects system memory metrics.
+This plugin collects metrics about the system memory.
 
-For a more complete explanation of the difference between *used* and
-*actual_used* RAM, see [Linux ate my ram](http://www.linuxatemyram.com/).
+> [!TIP]
+> For an explanation of the difference between *used* and *actual_used*
+> RAM, see [Linux ate my ram][linux_ate_my_ram].
+
+⭐ Telegraf v0.1.5
+🏷️ system
+💻 all
+
+[linux_ate_my_ram]: http://www.linuxatemyram.com/
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

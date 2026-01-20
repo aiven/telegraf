@@ -1,20 +1,19 @@
 # Execd Processor Plugin
 
-The `execd` processor plugin runs an external program as a separate process and
-pipes metrics in to the process's STDIN and reads processed metrics from its
-STDOUT.  The programs must accept influx line protocol on standard in (STDIN)
-and output metrics in influx line protocol to standard output (STDOUT).
+This plugin runs an external program as a separate process and pipes metrics in
+to the process's `stdin` and reads processed metrics from its `stdout`. Program
+output on `stderr` is logged.
 
-Program output on standard error is mirrored to the telegraf log.
-
-Telegraf minimum version: Telegraf 1.15.0
+⭐ Telegraf v1.15.0
+🏷️ general purpose
+💻 all
 
 ## Caveats
 
-- Metrics with tracking will be considered "delivered" as soon as they are passed
-  to the external process. There is currently no way to match up which metric
-  coming out of the execd process relates to which metric going in (keep in mind
-  that processors can add and drop metrics, and that this is all done
+- Metrics with tracking will be considered "delivered" as soon as they are
+  passed to the external process. There is currently no way to match up which
+  metric coming out of the execd process relates to which metric going in (keep
+  in mind that processors can add and drop metrics, and that this is all done
   asynchronously).
 - it's not currently possible to use a data_format other than "influx", due to
   the requirement that it is serialize-parse symmetrical and does not lose any
@@ -22,10 +21,9 @@ Telegraf minimum version: Telegraf 1.15.0
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

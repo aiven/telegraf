@@ -1,17 +1,23 @@
 # RAS Daemon Input Plugin
 
-This plugin is only available on Linux (only for `386`, `amd64`, `arm` and
-`arm64` architectures).
+This plugin gathers statistics and error counts provided by the local
+[RAS (reliability, availability and serviceability)][ras] daemon.
 
-The `RAS` plugin gathers and counts errors provided by
-[RASDaemon](https://github.com/mchehab/rasdaemon).
+> [!NOTE]
+> This plugin requires access to SQLite3 database from `RASDaemon`. Please make
+> sure the Telegraf user has the required permissions to this database!
+
+⭐ Telegraf v1.16.0
+🏷️ server
+💻 linux
+
+[ras]: https://github.com/mchehab/rasdaemon
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -63,11 +69,6 @@ following MCE events:
 - external_mce_errors
 - microcode_rom_parity_errors
 - unclassified_mce_errors
-
-## Permissions
-
-This plugin requires access to SQLite3 database from `RASDaemon`. Please make
-sure that user has required permissions to this database.
 
 ## Example Output
 

@@ -1,14 +1,18 @@
 # OPC UA Client Listener Input Plugin
 
-The `opcua_listener` plugin subscribes to data from OPC UA Server devices.
+This service plugin receives data from an [OPC UA][opcua] server by subscribing
+to nodes and events.
 
-Telegraf minimum version: Telegraf 1.25
-Plugin minimum tested version: 1.25
+⭐ Telegraf v1.25.0
+🏷️ iot
+💻 all
+
+[opcua]: https://opcfoundation.org/about/opc-technologies/opc-ua/
 
 ## Service Input <!-- @/docs/includes/service_input.md -->
 
 This plugin is a service input. Normal plugins gather metrics determined by the
-interval setting. Service plugins start a service to listens and waits for
+interval setting. Service plugins start a service to listen and wait for
 metrics or events to occur. Service plugins have two key differences from
 normal plugins:
 
@@ -18,10 +22,9 @@ normal plugins:
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
@@ -79,7 +82,10 @@ to use them.
   ## Path to private key.pem. Required when security mode or policy isn't "None".
   ## If key path is not supplied, self-signed cert and key will be generated.
   # private_key = "/etc/telegraf/key.pem"
-  #
+
+  ## Path to additional, explicitly trusted certificate for the remote endpoint
+  # remote_certificate = "/etc/telegraf/opcua_server_cert.pem"
+
   ## Authentication Method, one of "Certificate", "UserName", or "Anonymous".  To
   ## authenticate using a specific ID, select 'Certificate' or 'UserName'
   # auth_method = "Anonymous"
@@ -117,10 +123,13 @@ to use them.
   ## Node ID configuration
   ## name              - field name to use in the output
   ## namespace         - OPC UA namespace of the node (integer value 0 thru 3)
+  ## namespace_uri     - OPC UA namespace URI (alternative to namespace for stable references)
   ## identifier_type   - OPC UA ID type (s=string, i=numeric, g=guid, b=opaque)
   ## identifier        - OPC UA ID (tag as shown in opcua browser)
   ## default_tags      - extra tags to be added to the output metric (optional)
   ## monitoring_params - additional settings for the monitored node (optional)
+  ##
+  ## Note: Specify either 'namespace' or 'namespace_uri', not both.
   ##
   ## Monitoring parameters
   ## sampling_interval  - interval at which the server should check for data
@@ -184,6 +193,12 @@ to use them.
   #       deadband_type = "Absolute"
   #       deadband_value = 0.0
   #
+  # [[inputs.opcua_listener.nodes]]
+  #   name = "node3"
+  #   namespace_uri = "http://opcfoundation.org/UA/"
+  #   identifier_type = ""
+  #   identifier = ""
+  #
   ## Node Group
   ## Sets defaults so they aren't required in every node.
   ## Default values can be set for:
@@ -203,8 +218,12 @@ to use them.
   ## namespace, this is used.
   # namespace =
   #
+  ## Group default namespace URI. Alternative to namespace for stable references.
+  ## If a node in the group doesn't set its namespace_uri, this is used.
+  # namespace_uri =
+  #
   ## Group default identifier type. If a node in the group doesn't set its
-  ## namespace, this is used.
+  ## identifier_type, this is used.
   # identifier_type =
   #
   ## Default tags that are applied to every node in this group. Can be
@@ -250,24 +269,52 @@ to use them.
   #       deadband_value = 0.0
   #
 
+  ## Multiple event groups are allowed.
+  # [[inputs.opcua_listener.events]]
+  #   ## Polling interval for data collection
+  #   # sampling_interval = "10s"
+  #   ## Size of the notification queue
+  #   # queue_size = 10
+  #   ## Node parameter defaults for node definitions below
+  #   # namespace = ""
+  #   # identifier_type = ""
+  #   ## Specifies OPCUA Event sources to filter on
+  #   # source_names = ["SourceName1", "SourceName2"]
+  #   ## Fields to capture from event notifications
+  #   fields = ["Severity", "Message", "Time"]
+  #
+  #   ## Type or level of events to capture from the monitored nodes.
+  #   [inputs.opcua_listener.events.event_type_node]
+  #     namespace = ""
+  #     identifier_type = ""
+  #     identifier = ""
+  #
+  #   ## Nodes to monitor for event notifications associated with the defined
+  #   ## event type
+  #   [[inputs.opcua_listener.events.node_ids]]
+  #     namespace = ""
+  #     identifier_type = ""
+  #     identifier = ""
+
   ## Enable workarounds required by some devices to work correctly
   # [inputs.opcua_listener.workarounds]
-    ## Set additional valid status codes, StatusOK (0x0) is always considered valid
-    # additional_valid_status_codes = ["0xC0"]
-
-  # [inputs.opcua_listener.request_workarounds]
-    ## Use unregistered reads instead of registered reads
-    # use_unregistered_reads = false
+  #  ## Set additional valid status codes, StatusOK (0x0) is always considered valid
+  #  # additional_valid_status_codes = ["0xC0"]
+  #  ## Use unregistered reads instead of registered reads
+  #  # use_unregistered_reads = false
 ```
 
-## Node Configuration
+### Node Configuration
 
 An OPC UA node ID may resemble: "ns=3;s=Temperature". In this example:
 
 - ns=3 is indicating the `namespace` is 3
-- s=Temperature is indicting that the `identifier_type` is a string and `identifier` value is 'Temperature'
+- s=Temperature is indicting that the `identifier_type` is a string and
+  `identifier` value is 'Temperature'
 - This example temperature node has a value of 79.0
-To gather data from this node enter the following line into the 'nodes' property above:
+
+To gather data from this node enter the following line into the 'nodes'
+property above:
 
 ```text
 {name="temp", namespace="3", identifier_type="s", identifier="Temperature"},
@@ -286,13 +333,66 @@ produces a metric like this:
 opcua,id=ns\=3;s\=Temperature temp=79.0,Quality="OK (0x0)",DataType="Float" 1597820490000000000
 ```
 
-## Group Configuration
+If the value is an array, each element is unpacked into a field
+using indexed keys. For example:
 
-Groups can set default values for the namespace, identifier type, tags
-settings and sampling interval.  The default values apply to all the
-nodes in the group.  If a default is set, a node may omit the setting
-altogether. This simplifies node configuration, especially when many
-nodes share the same namespace or identifier type.
+```text
+opcua,id=ns\=3;s\=Temperature temp[0]=79.0,temp[1]=38.9,Quality="OK (0x0)",DataType="Float" 1597820490000000000
+```
+
+#### Namespace Index vs Namespace URI
+
+OPC UA supports two ways to specify namespaces:
+
+1. **Namespace Index** (`namespace`): An integer (0-3 or higher) that references
+   a position in the server's namespace array. This is simpler but can change if
+   the server is restarted or reconfigured.
+
+2. **Namespace URI** (`namespace_uri`): A string URI that uniquely identifies
+   the namespace. This is more stable across server restarts but requires the
+   plugin to fetch the namespace array from the server to resolve the URI to an index.
+
+**When to use namespace index:**
+
+- For standard OPC UA namespaces (0 = OPC UA, 1 = Local Server)
+- When namespace stability is not a concern
+- For simpler configuration
+
+**When to use namespace URI:**
+
+- When you need consistent node references across server restarts
+- For production environments where namespace indices might change
+- When working with vendor-specific namespaces
+
+**Example using namespace URI:**
+
+```toml
+[[inputs.opcua_listener.nodes]]
+  name = "ServerStatus"
+  namespace_uri = "http://opcfoundation.org/UA/"
+  identifier_type = "i"
+  identifier = "2256"
+```
+
+This produces the same node ID internally as:
+
+```toml
+[[inputs.opcua_listener.nodes]]
+  name = "ServerStatus"
+  namespace = "0"
+  identifier_type = "i"
+  identifier = "2256"
+```
+
+Note: You must specify either `namespace` or `namespace_uri`, not both.
+
+#### Group Configuration
+
+Groups can set default values for the namespace (index or URI), identifier type,
+tags settings and sampling interval. The default values apply to all the nodes
+in the group. If a default is set, a node may omit the setting altogether. This
+simplifies node configuration, especially when many nodes share the same
+namespace or identifier type.
 
 The output metric will include tags set in the group and the node.  If
 a tag with the same name is set in both places, the tag value from the
@@ -342,16 +442,68 @@ This example group configuration has three groups with two nodes each:
     ]
 ```
 
-## Connection Service
+### Event Configuration
 
-This plugin subscribes to the specified nodes to receive data from
-the OPC server. The updates are received at most as fast as the
-`subscription_interval`.
+Defining events allows subscribing to events with the specific node IDs and
+filtering criteria based on the event type and source. The plugin subscribes to
+the specified `event_type` Node-IDs and collects events that meet the defined
+criteria. The `node_ids` parameter specifies the nodes to monitor for events
+(monitored items). However, the actual subscription is based on the
+`event_type_node` determining the events to capture.
+
+#### Event Group Configuration
+
+You can define multiple groups for the event streaming to subscribe to different
+event types. Each group allows to specify defaults for `namespace` and
+`identifier_type` being overwritten by settings in `node_ids`. The group
+defaults for node information will not affected the `event_type_node` setting
+and all paramters must be set in this section.
+
+This example group configuration shows how to use group settings:
+
+```toml
+# Group 1
+[[inputs.opcua_listener.events]]
+   sampling_interval = "10s"
+   queue_size = "100"
+   source_names = ["SourceName1", "SourceName2"]
+   fields = ["Severity", "Message", "Time"]
+
+   [inputs.opcua_listener.events.event_type_node]
+     namespace = "1"
+     identifier_type = "i"
+     identifier = "1234"
+
+   [[inputs.opcua_listener.events.node_ids]]
+     namespace = "2"
+     identifier_type = "i"
+     identifier = "2345"
+
+# Group 2
+[[inputs.opcua_listener.events]]
+   sampling_interval = "10s"
+   queue_size = "100"
+   namespace = "3"
+   identifier_type = "s"
+   source_names = ["SourceName1", "SourceName2"]
+   fields = ["Severity", "Message", "Time"]
+
+   [inputs.opcua_listener.events.event_type_node]
+     namespace = "1"
+     identifier_type = "i"
+     identifier = "5678"
+
+    node_ids = [
+      {identifier="Sensor1"}, // default values will be used for namespace and identifier_type
+      {namespace="2", identifier="TemperatureSensor"}, // default values will be used for identifier_type
+      {namespace="5", identifier_type="i", identifier="2002"} // no default values will be used
+    ]
+```
 
 ## Metrics
 
-The metrics collected by this input plugin will depend on the
-configured `nodes` and `group`.
+The metrics collected by this input plugin will depend on the configured
+`nodes`, `events` and the corresponding groups.
 
 ## Example Output
 

@@ -108,6 +108,7 @@ func newConn(rwc io.ReadWriteCloser) *conn {
 	return &conn{rwc: rwc}
 }
 
+// Close closes the FastCGI connection and releases resources.
 func (c *conn) Close() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -212,6 +213,7 @@ func encodeSize(b []byte, size uint32) int {
 		binary.BigEndian.PutUint32(b, size)
 		return 4
 	}
+	//nolint:gosec // G602: False positive — all callers allocate b with length >= 1 (e.g., make([]byte,4) or make([]byte,8)), so indexing b[0] is safe.
 	b[0] = byte(size)
 	return 1
 }
@@ -223,6 +225,7 @@ type bufWriter struct {
 	*bufio.Writer
 }
 
+// Close flushes any buffered data to the underlying writer and releases resources.
 func (w *bufWriter) Close() error {
 	if err := w.Writer.Flush(); err != nil {
 		w.closer.Close()
@@ -261,6 +264,7 @@ func (w *streamWriter) Write(p []byte) (int, error) {
 	return nn, nil
 }
 
+// Close closes the underlying stream and releases resources.
 func (w *streamWriter) Close() error {
 	// send empty record to close the stream
 	return w.c.writeRecord(w.recType, w.reqID, nil)

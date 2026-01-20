@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/awnumar/memguard"
+	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
 
 	"github.com/influxdata/telegraf/config"
@@ -133,6 +135,14 @@ func runApp(args []string, outputBuffer io.Writer, pprof Server, c TelegrafConfi
 			Name:  "secretstore-filter",
 			Usage: "filter the secret-stores to enable, separator is ':'",
 		},
+		&cli.BoolFlag{
+			Name:  "strict-env-handling",
+			Usage: "enforces strict and secure handling of environment variables; will not work with non-string settings",
+		},
+		&cli.BoolFlag{
+			Name:  "non-strict-env-handling",
+			Usage: "allow unsafe non-strict handling of environment variables to replace non-string settings",
+		},
 	}
 
 	mainFlags := append(configHandlingFlags, cliFlags()...)
@@ -221,6 +231,20 @@ func runApp(args []string, outputBuffer io.Writer, pprof Server, c TelegrafConfi
 			pprof.Start(cCtx.String("pprof-addr"))
 		}
 
+		if cCtx.Bool("strict-env-handling") && cCtx.Bool("non-strict-env-handling") {
+			return errors.New("flags --strict-env-handling and --non-strict-env-handling cannot be used together")
+		}
+		if !cCtx.Bool("strict-env-handling") && !cCtx.Bool("non-strict-env-handling") {
+			msg := "Strict environment variable handling will be the new default starting with v1.38.0! " +
+				"If your configuration works with strict handling or you don't use environment variables it is safe " +
+				"to ignore this warning. Otherwise please explicitly add the --non-strict-env-handling flag!"
+			log.Println("W! " + color.YellowString(msg))
+		}
+
+		if err := config.SetPluginLabelSelections(cCtx.StringSlice("select")); err != nil {
+			return err
+		}
+
 		filters := processFilterFlags(cCtx)
 
 		g := GlobalFlags{
@@ -231,10 +255,12 @@ func runApp(args []string, outputBuffer io.Writer, pprof Server, c TelegrafConfi
 			configURLWatchInterval:  cCtx.Duration("config-url-watch-interval"),
 			watchConfig:             cCtx.String("watch-config"),
 			watchInterval:           cCtx.Duration("watch-interval"),
+			watchDebounceInterval:   cCtx.Duration("watch-debounce-interval"),
 			pidFile:                 cCtx.String("pidfile"),
 			plugindDir:              cCtx.String("plugin-directory"),
 			password:                cCtx.String("password"),
 			oldEnvBehavior:          cCtx.Bool("old-env-behavior"),
+			nonStrictEnvVars:        !cCtx.Bool("strict-env-handling"),
 			printPluginConfigSource: cCtx.Bool("print-plugin-config-source"),
 			test:                    cCtx.Bool("test"),
 			debug:                   cCtx.Bool("debug"),
@@ -295,6 +321,12 @@ func runApp(args []string, outputBuffer io.Writer, pprof Server, c TelegrafConfi
 					Usage: "monitoring config changes [notify, poll] of --config and --config-directory options. " +
 						"Notify supports linux, *bsd, and macOS. Poll is required for Windows and checks every 250ms.",
 				},
+				&cli.DurationFlag{
+					Name:        "watch-debounce-interval",
+					Usage:       "Time duration to wait after a config change before reloading",
+					DefaultText: "0s",
+					Value:       0,
+				},
 				&cli.StringFlag{
 					Name:  "pidfile",
 					Usage: "file to write our pid to",
@@ -332,7 +364,15 @@ func runApp(args []string, outputBuffer io.Writer, pprof Server, c TelegrafConfi
 				&cli.BoolFlag{
 					Name: "test",
 					Usage: "enable test mode: gather metrics, print them out, and exit. " +
-						"Note: Test mode only runs inputs, not processors, aggregators, or outputs",
+						"Note: Test mode only runs inputs, processors, and aggregators, but not outputs",
+				},
+				&cli.StringSliceFlag{
+					Name: "select",
+					Usage: "enable only plugins with labels matching the given key-value selection. " +
+						"If no selectors are provided, all plugins are enabled. Multiple key-value pairs " +
+						"in an option will be combined by AND, multiple options are combined by OR. " +
+						"Key and value are separated by an equal sign, multiple pairs are separated by " +
+						"semi-colon, values do accept wildcards.",
 				},
 				//
 				// Duration flags

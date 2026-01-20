@@ -375,7 +375,7 @@ func TestFieldMappings(t *testing.T) {
 							WordLen:  0x03,
 							DBNumber: 5,
 							Start:    3,
-							Amount:   10,
+							Amount:   12,
 							Data:     make([]byte, 12),
 						},
 					},
@@ -383,7 +383,9 @@ func TestFieldMappings(t *testing.T) {
 						{
 							measurement: "test",
 							field:       "foo",
-							convert:     func([]byte) interface{} { return "" },
+							convert: func(b []byte) interface{} {
+								return string(b[2 : 2+b[1]])
+							},
 						},
 					},
 				},
@@ -559,6 +561,76 @@ func TestFieldMappings(t *testing.T) {
 							measurement: "test",
 							field:       "foo",
 							convert:     func([]byte) interface{} { return float32(0) },
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "single field long integer",
+			configs: []metricDefinition{
+				{
+					Name: "test",
+					Fields: []metricFieldDefinition{
+						{
+							Name:    "foo",
+							Address: "DB5.LI3",
+						},
+					},
+				},
+			},
+			expected: []batch{
+				{
+					items: []gos7.S7DataItem{
+						{
+							Area:     0x84,
+							WordLen:  0x06,
+							DBNumber: 5,
+							Start:    3,
+							Amount:   2,
+							Data:     make([]byte, 8),
+						},
+					},
+					mappings: []fieldMapping{
+						{
+							measurement: "test",
+							field:       "foo",
+							convert:     func([]byte) interface{} { return int64(0) },
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "single field long real",
+			configs: []metricDefinition{
+				{
+					Name: "test",
+					Fields: []metricFieldDefinition{
+						{
+							Name:    "foo",
+							Address: "DB5.LR3",
+						},
+					},
+				},
+			},
+			expected: []batch{
+				{
+					items: []gos7.S7DataItem{
+						{
+							Area:     0x84,
+							WordLen:  0x06,
+							DBNumber: 5,
+							Start:    3,
+							Amount:   2,
+							Data:     make([]byte, 8),
+						},
+					},
+					mappings: []fieldMapping{
+						{
+							measurement: "test",
+							field:       "foo",
+							convert:     func([]byte) interface{} { return float64(0) },
 						},
 					},
 				},

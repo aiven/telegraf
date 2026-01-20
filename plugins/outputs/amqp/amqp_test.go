@@ -64,7 +64,7 @@ func TestConnect(t *testing.T) {
 			errFunc: func(t *testing.T, output *AMQP, err error) {
 				cfg := output.config
 				require.Equal(t, []string{DefaultURL}, cfg.brokers)
-				require.Equal(t, "", cfg.exchange)
+				require.Empty(t, cfg.exchange)
 				require.Equal(t, "topic", cfg.exchangeType)
 				require.False(t, cfg.exchangePassive)
 				require.True(t, cfg.exchangeDurable)
@@ -116,7 +116,7 @@ func TestConnect(t *testing.T) {
 		{
 			name: "username password",
 			output: &AMQP{
-				URL:      "amqp://foo:bar@localhost",
+				Brokers:  []string{"amqp://foo:bar@localhost"},
 				Username: config.NewSecret([]byte("telegraf")),
 				Password: config.NewSecret([]byte("pa$$word")),
 				connect: func(_ *ClientConfig) (Client, error) {
@@ -138,7 +138,7 @@ func TestConnect(t *testing.T) {
 		{
 			name: "url support",
 			output: &AMQP{
-				URL: DefaultURL,
+				Brokers: []string{DefaultURL},
 				connect: func(_ *ClientConfig) (Client, error) {
 					return NewMockClient(), nil
 				},

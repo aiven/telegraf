@@ -1,19 +1,23 @@
 # Neoom Beaam Input Plugin
 
-This plugin reads metrics from the Neoom Beaam gateway using the
-[Beaam API][BeaamAPI]. Usually an access token is required which can be created
-in the Neoom web interface. Please follow the [developer instructions][DevPage]
-to create the token!
+This plugin gathers metrics from a [Neoom Beaam gateway][beaam] using the
+[Beaam API][beaam_api] with access token that can be created in the Neoom web
+interface. Please follow the [developer instructions][devpage] to create the
+token.
 
-[BeaamAPI]: https://developer.neoom.com/reference/concepts-terms-1
-[DevPage]:https://neoom.com/developers
+⭐ Telegraf v1.33.0
+🏷️ iot
+💻 all
+
+[beaam]: https://neoom.com/en/products/beaam
+[beaam_api]: https://developer.neoom.com/reference/concepts-terms-1
+[devpage]:https://neoom.com/developers
 
 ## Global configuration options <!-- @/docs/includes/plugin_config.md -->
 
-In addition to the plugin-specific configuration settings, plugins support
-additional global and plugin configuration settings. These settings are used to
-modify metrics, tags, and field or create aliases and configure ordering, etc.
-See the [CONFIGURATION.md][CONFIGURATION.md] for more details.
+Plugins support additional global and plugin configuration settings for tasks
+such as modifying metrics, tags, and fields, creating aliases, and configuring
+plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 

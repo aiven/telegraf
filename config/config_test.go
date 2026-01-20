@@ -387,62 +387,62 @@ func TestConfig_FieldNotDefined(t *testing.T) {
 		{
 			name:     "in input plugin without parser",
 			filename: "./testdata/invalid_field.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in input plugin with parser",
 			filename: "./testdata/invalid_field_with_parser.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in input plugin with parser func",
 			filename: "./testdata/invalid_field_with_parserfunc.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in parser of input plugin",
 			filename: "./testdata/invalid_field_in_parser_table.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in parser of input plugin with parser-func",
 			filename: "./testdata/invalid_field_in_parserfunc_table.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in processor plugin without parser",
 			filename: "./testdata/invalid_field_processor.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in processor plugin with parser",
 			filename: "./testdata/invalid_field_processor_with_parser.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in processor plugin with parser func",
 			filename: "./testdata/invalid_field_processor_with_parserfunc.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in parser of processor plugin",
 			filename: "./testdata/invalid_field_processor_in_parser_table.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 		{
 			name:     "in parser of processor plugin with parser-func",
 			filename: "./testdata/invalid_field_processor_in_parserfunc_table.toml",
-			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used. " +
-				"This is either a typo or this config option does not exist in this version.",
+			expected: "line 1: configuration specified the fields [\"not_a_field\"], but they were not used; " +
+				"this is either a typo or this config option does not exist in this version",
 		},
 	}
 
@@ -903,7 +903,7 @@ func TestConfig_MultipleProcessorsOrder(t *testing.T) {
 			}
 			require.NoError(t, c.LoadAll(filenames...))
 
-			require.Equal(t, len(test.expectedOrder), len(c.Processors))
+			require.Len(t, c.Processors, len(test.expectedOrder))
 
 			var order []string
 			for _, p := range c.Processors {
@@ -1093,11 +1093,10 @@ func TestConfigPluginIDsSame(t *testing.T) {
 
 func TestPersisterInputStoreLoad(t *testing.T) {
 	// Reserve a temporary state file
-	file, err := os.CreateTemp("", "telegraf_state-*.json")
+	file, err := os.CreateTemp(t.TempDir(), "telegraf_state-*.json")
 	require.NoError(t, err)
 	filename := file.Name()
 	require.NoError(t, file.Close())
-	defer os.Remove(filename)
 
 	// Load the plugins
 	cstore := config.NewConfig()
@@ -1193,6 +1192,255 @@ func TestPersisterProcessorRegistration(t *testing.T) {
 		p := unwrapped.(*MockupProcessorPlugin)
 		require.NoError(t, dut.Register(plugin.ID(), p))
 	}
+}
+
+func TestConfigEnvVarsStrict(t *testing.T) {
+	tests := []struct {
+		name     string
+		file     string
+		envvars  map[string]string
+		expected *MockupInputPlugin
+	}{
+		{
+			name: "valid",
+			file: "envvar_valid.conf",
+			envvars: map[string]string{
+				"MY_TEST_SERVER": "192.168.1.1",
+			},
+			expected: &MockupInputPlugin{
+				Servers: []string{"192.168.1.1"},
+				Port:    8080,
+				Command: `Raw command which may or may not contain # in it
+# is unique`,
+			},
+		},
+		{
+			name: "valid multiline",
+			file: "envvar_valid_multiline.conf",
+			envvars: map[string]string{
+				"MY_TEST_SERVER": "192.168.1.1",
+				"COMMAND": `
+					Raw command potentially
+					with multiple
+					lines in it
+				`,
+			},
+			expected: &MockupInputPlugin{
+				Servers: []string{"192.168.1.1"},
+				Port:    8080,
+				Command: "    " + `
+					Raw command potentially
+					with multiple
+					lines in it
+				` + "\n  ",
+			},
+		},
+
+		{
+			name: "malicious envvar",
+			file: "envvar_malicious.conf",
+			envvars: map[string]string{
+				"PORT": "8080",
+				"PIDFILE": `a pid"
+
+			[[inputs.memcached]]
+			  command = "evil`,
+			},
+			expected: &MockupInputPlugin{
+				Servers: []string{"my.server.com"},
+				Port:    8080,
+				Command: `Raw command which may or may not contain # in it
+# is unique`,
+				PidFile: `a pid"
+
+			[[inputs.memcached]]
+			  command = "evil`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config.NonStrictEnvVarHandling = false
+
+			// Export the environment variables
+			for k, v := range tt.envvars {
+				t.Setenv(k, v)
+			}
+
+			// Load the config
+			c := config.NewConfig()
+			confFile := filepath.Join("testdata", tt.file)
+			require.NoError(t, c.LoadConfig(confFile))
+
+			// Validate the loaded data
+			require.Len(t, c.Inputs, 1)
+			plugin, ok := c.Inputs[0].Input.(*MockupInputPlugin)
+			require.Truef(t, ok, "plugin is of wrong type %T", c.Inputs[0].Input)
+
+			// Ignore Log, Parser and ID
+			plugin.Log = nil
+			plugin.parser = nil
+			require.Equal(t, tt.expected, plugin)
+		})
+	}
+}
+
+func TestConfigEnvVarsStrictFailNonString(t *testing.T) {
+	config.NonStrictEnvVarHandling = false
+
+	envvars := map[string]string{
+		"MY_TEST_SERVER": "192.168.1.1",
+		"PORT":           "443",
+	}
+
+	// Export the environment variables
+	for k, v := range envvars {
+		t.Setenv(k, v)
+	}
+
+	// Load the config
+	c := config.NewConfig()
+	confFile := filepath.Join("testdata", "envvar_non_string.conf")
+	require.ErrorContains(t, c.LoadConfig(confFile), "invalid TOML syntax")
+}
+
+func TestConfigEnvVarsNonStrict(t *testing.T) {
+	tests := []struct {
+		name     string
+		file     string
+		envvars  map[string]string
+		expected *MockupInputPlugin
+	}{
+		{
+			name: "valid",
+			file: "envvar_valid.conf",
+			envvars: map[string]string{
+				"MY_TEST_SERVER": "192.168.1.1",
+			},
+			expected: &MockupInputPlugin{
+				Servers: []string{"192.168.1.1"},
+				Command: `Raw command which may or may not contain # in it
+# is unique`,
+				Port: 8080,
+			},
+		},
+		{
+			name: "non-string",
+			file: "envvar_non_string.conf",
+			envvars: map[string]string{
+				"MY_TEST_SERVER": "192.168.1.1",
+				"PORT":           "443",
+			},
+			expected: &MockupInputPlugin{
+				Servers: []string{"192.168.1.1"},
+				Port:    443,
+				Command: `Raw command which may or may not contain # in it
+# is unique`,
+			},
+		},
+		{
+			name: "valid multiline",
+			file: "envvar_valid_multiline.conf",
+			envvars: map[string]string{
+				"MY_TEST_SERVER": "192.168.1.1",
+				"COMMAND": `
+					Raw command potentially
+					with multiple
+					lines in it
+				`,
+			},
+			expected: &MockupInputPlugin{
+				Servers: []string{"192.168.1.1"},
+				Port:    8080,
+				Command: "    " + `
+					Raw command potentially
+					with multiple
+					lines in it
+				` + "\n  ",
+			},
+		},
+
+		{
+			name: "non-string multiline",
+			file: "envvar_non_string_multiline.conf",
+			envvars: map[string]string{
+				"MY_TEST_SERVER": "192.168.1.1",
+				"PORT":           "443",
+				"COMMAND": `
+					Raw command potentially
+					with multiple
+					lines in it
+				`,
+			},
+			expected: &MockupInputPlugin{
+				Servers: []string{"192.168.1.1"},
+				Port:    443,
+				Command: "    " + `
+					Raw command potentially
+					with multiple
+					lines in it
+				` + "\n  ",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config.NonStrictEnvVarHandling = true
+			t.Cleanup(func() {
+				config.NonStrictEnvVarHandling = false
+			})
+
+			// Export the environment variables
+			for k, v := range tt.envvars {
+				t.Setenv(k, v)
+			}
+
+			// Load the config
+			c := config.NewConfig()
+			confFile := filepath.Join("testdata", tt.file)
+			require.NoError(t, c.LoadConfig(confFile))
+
+			// Validate the loaded data
+			require.Len(t, c.Inputs, 1)
+			plugin, ok := c.Inputs[0].Input.(*MockupInputPlugin)
+			require.Truef(t, ok, "plugin is of wrong type %T", c.Inputs[0].Input)
+
+			// Ignore Log, Parser and ID
+			plugin.Log = nil
+			plugin.parser = nil
+			require.Equal(t, tt.expected, plugin)
+		})
+	}
+}
+
+func TestConfigEnvVarsNonStrictMalicious(t *testing.T) {
+	envvars := map[string]string{
+		"PORT": "8080",
+		"PIDFILE": `a pid"
+
+			[[inputs.memcached]]
+			  command = "evil`,
+	}
+
+	config.NonStrictEnvVarHandling = true
+	t.Cleanup(func() {
+		config.NonStrictEnvVarHandling = false
+	})
+
+	// Export the environment variables
+	for k, v := range envvars {
+		t.Setenv(k, v)
+	}
+
+	// Load the config
+	c := config.NewConfig()
+	confFile := filepath.Join("testdata", "envvar_malicious.conf")
+	require.NoError(t, c.LoadConfig(confFile))
+
+	// We expect too plugins due to malicious environment setting
+	require.Len(t, c.Inputs, 2)
 }
 
 // Mockup INPUT plugin for (new) parser testing to avoid cyclic dependencies
