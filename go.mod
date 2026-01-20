@@ -138,7 +138,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.7.8
 	github.com/jeremywohl/flatten/v2 v2.0.0-20211013061545-07e4a09fb8e4
 	github.com/jmespath/go-jmespath v0.4.0
-	github.com/karrick/godirwalk v1.16.2
+	github.com/karrick/godirwalk v1.17.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/compress v1.18.2
 	github.com/klauspost/pgzip v1.2.6
