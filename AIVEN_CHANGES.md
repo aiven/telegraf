@@ -35,6 +35,13 @@
 * 2022-01-21
   * added aggregated IOPerf Stats ( probably upstreamable )
 
+### Zookeeper
+
+* 2026-06-25
+  * parse `mntr` lines by splitting on the tab, so keys with special
+    characters ( e.g. znode names with `%`, spaces or `:` ) no longer abort
+    the whole scrape; unparseable lines are skipped with a warning
+
 ## Output Plugins
 
 ### Aiven Postgresql
