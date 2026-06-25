@@ -2,6 +2,7 @@ package zookeeper
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,6 +25,33 @@ func TestInit(t *testing.T) {
 	require.Equal(t, config.Duration(5*time.Second), plugin.Timeout)
 
 	require.Nil(t, plugin.tlsConfig)
+}
+
+func TestParseMntr(t *testing.T) {
+	mntr := strings.Join([]string{
+		"zk_version\t3.8.0",
+		"zk_server_state\tleader",
+		"zk_avg_latency\t1.5",
+		"zk_packets_received\t42",
+		// Per-namespace metric whose embedded znode name contains '%'.
+		"zk_avg_action_update_service_users_privileges%key%4b39c570825d4773%done_write_per_namespace\t86.0",
+		// znode names allow most characters, including spaces and ':'.
+		"zk_avg_latency_for_my namespace:1\t7",
+		// Unparseable lines (no tab / wrong prefix) must be skipped.
+		"this is not a metric line",
+		"not_zk_prefixed\t1",
+	}, "\n") + "\n"
+
+	plugin := &Zookeeper{ParseFloats: "float", Log: testutil.Logger{}}
+	fields, state := plugin.parseMntr(strings.NewReader(mntr))
+
+	require.Equal(t, "leader", state)
+	require.Equal(t, int64(42), fields["packets_received"])
+	require.InDelta(t, 1.5, fields["avg_latency"], 1e-9)
+	require.InDelta(t, 86.0, fields["avg_action_update_service_users_privileges%key%4b39c570825d4773%done_write_per_namespace"], 1e-9)
+	require.Equal(t, int64(7), fields["avg_latency_for_my namespace:1"])
+	require.NotContains(t, fields, "server_state")
+	require.NotContains(t, fields, "not_zk_prefixed")
 }
 
 func TestZookeeperGeneratesMetricsIntegration(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"fmt"
+	"io"
 	"net"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -23,12 +23,11 @@ import (
 //go:embed sample.conf
 var sampleConfig string
 
-var zookeeperFormatRE = regexp.MustCompile(`^zk_(\w[\w\.\-]*)\s+([\w\.\-]+)`)
-
 type Zookeeper struct {
 	Servers     []string        `toml:"servers"`
 	Timeout     config.Duration `toml:"timeout"`
 	ParseFloats string          `toml:"parse_floats"`
+	Log         telegraf.Logger `toml:"-"`
 
 	EnableTLS bool `toml:"enable_tls" deprecated:"1.37.0;1.40.0;use 'tls_enable' instead"`
 	common_tls.ClientConfig
@@ -70,7 +69,6 @@ func (z *Zookeeper) Gather(acc telegraf.Accumulator) error {
 }
 
 func (z *Zookeeper) gatherServer(ctx context.Context, address string, acc telegraf.Accumulator) error {
-	var zookeeperState string
 	_, _, err := net.SplitHostPort(address)
 	if err != nil {
 		address = address + ":2181"
@@ -93,50 +91,13 @@ func (z *Zookeeper) gatherServer(ctx context.Context, address string, acc telegr
 	if _, err := fmt.Fprintf(c, "%s\n", "mntr"); err != nil {
 		return err
 	}
-	rdr := bufio.NewReader(c)
-	scanner := bufio.NewScanner(rdr)
 
 	service := strings.Split(address, ":")
 	if len(service) != 2 {
 		return fmt.Errorf("invalid service address: %s", address)
 	}
 
-	fields := make(map[string]interface{})
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := zookeeperFormatRE.FindStringSubmatch(line)
-
-		if len(parts) != 3 {
-			return fmt.Errorf("unexpected line in mntr response: %q", line)
-		}
-
-		measurement := strings.TrimPrefix(parts[1], "zk_")
-		if measurement == "server_state" {
-			zookeeperState = parts[2]
-			continue
-		}
-
-		sValue := parts[2]
-
-		// First attempt to parse as an int
-		iVal, err := strconv.ParseInt(sValue, 10, 64)
-		if err == nil {
-			fields[measurement] = iVal
-			continue
-		}
-
-		// If set, attempt to parse as a float
-		if z.ParseFloats == "float" {
-			fVal, err := strconv.ParseFloat(sValue, 64)
-			if err == nil {
-				fields[measurement] = fVal
-				continue
-			}
-		}
-
-		// Finally, save as a string
-		fields[measurement] = sValue
-	}
+	fields, zookeeperState := z.parseMntr(c)
 
 	srv := "localhost"
 	if service[0] != "" {
@@ -151,6 +112,58 @@ func (z *Zookeeper) gatherServer(ctx context.Context, address string, acc telegr
 	acc.AddFields("zookeeper", fields, tags)
 
 	return nil
+}
+
+// parseMntr parses the response of the "mntr" four-letter-word command into
+// fields and the reported server state. Each line has the form
+// "zk_<key>\t<value>". A tab cannot appear in a ZooKeeper znode name, so it is
+// a safe delimiter even when the key embeds a znode name containing otherwise
+// arbitrary characters (spaces, '%', ':', and so on). Lines that do not match
+// this form are skipped (logged at warning) so a single unparseable metric does
+// not drop the whole scrape.
+func (z *Zookeeper) parseMntr(r io.Reader) (map[string]interface{}, string) {
+	var zookeeperState string
+	fields := make(map[string]interface{})
+
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		key, value, found := strings.Cut(line, "\t")
+		if !found || !strings.HasPrefix(key, "zk_") {
+			z.Log.Warnf("Skipping unexpected line in mntr response: %q", line)
+			continue
+		}
+
+		measurement := strings.TrimPrefix(key, "zk_")
+		value = strings.TrimSpace(value)
+
+		if measurement == "server_state" {
+			zookeeperState = value
+			continue
+		}
+
+		// First attempt to parse as an int
+		iVal, err := strconv.ParseInt(value, 10, 64)
+		if err == nil {
+			fields[measurement] = iVal
+			continue
+		}
+
+		// If set, attempt to parse as a float
+		if z.ParseFloats == "float" {
+			fVal, err := strconv.ParseFloat(value, 64)
+			if err == nil {
+				fields[measurement] = fVal
+				continue
+			}
+		}
+
+		// Finally, save as a string
+		fields[measurement] = value
+	}
+
+	return fields, zookeeperState
 }
 
 func (z *Zookeeper) dial(ctx context.Context, addr string) (net.Conn, error) {
