@@ -614,7 +614,8 @@ func (m *Mysql) gatherGlobalVariables(db *sql.DB, servtag string, acc telegraf.A
 				acc.AddError(errString)
 			}
 		} else {
-			fields[key] = value
+			// v2.ConvertGlobalVariables can parse "complex" multi-value fields, e.g. wsrep_provider_options
+			parseKeyValues(fields, key, value)
 		}
 
 		// Send 20 fields at a time
@@ -745,6 +746,7 @@ func gatherBinaryLogs(db *sql.DB, servtag string, acc telegraf.Accumulator) erro
 		fileSize  uint64
 		fileName  string
 		encrypted string
+		algorithm string
 	)
 
 	columns, err := rows.Columns()
@@ -755,11 +757,16 @@ func gatherBinaryLogs(db *sql.DB, servtag string, acc telegraf.Accumulator) erro
 
 	// iterate over rows and count the size and count of files
 	for rows.Next() {
-		if numColumns == 3 {
+		switch numColumns {
+		case 3:
 			if err := rows.Scan(&fileName, &fileSize, &encrypted); err != nil {
 				return err
 			}
-		} else {
+		case 4: // Compatible with versions that include encryption algorithms.
+			if err := rows.Scan(&fileName, &fileSize, &encrypted, &algorithm); err != nil {
+				return err
+			}
+		default:
 			if err := rows.Scan(&fileName, &fileSize); err != nil {
 				return err
 			}
@@ -886,7 +893,8 @@ func (m *Mysql) gatherGlobalStatuses(db *sql.DB, servtag string, acc telegraf.Ac
 			if err != nil {
 				acc.AddError(fmt.Errorf("error parsing mysql global status %q=%q: %w", key, string(val), err))
 			} else {
-				fields[key] = value
+				// v2.ConvertGlobalStatus can parse "complex" multi-value fields, e.g. wsrep_evs_repl_latency
+				parseKeyValues(fields, key, value)
 			}
 		}
 
@@ -1028,6 +1036,17 @@ func (m *Mysql) gatherUserStatisticsStatuses(db *sql.DB, servtag string, acc tel
 		acc.AddFields("mysql_user_stats", fields, tags)
 	}
 	return nil
+}
+
+// parseKeyValues converts multi-value maps to a per-value entry in fields
+func parseKeyValues(fields map[string]interface{}, key string, value interface{}) {
+	if valueToMap, ok := value.(map[string]interface{}); ok {
+		for mapKey, mapValue := range valueToMap {
+			fields[key+"_"+mapKey] = mapValue
+		}
+	} else {
+		fields[key] = value
+	}
 }
 
 // columnsToLower converts selected column names to lowercase.
