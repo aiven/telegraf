@@ -133,11 +133,14 @@ If experiencing frequent timeouts:
 
 ### Response Codes
 
-Different SIP servers may respond with different status codes to OPTIONS requests:
+Different SIP servers may respond with different status codes to OPTIONS
+requests:
 
 - `200 OK` - Server is operational and responding
-- `404 Not Found` - User or resource doesn't exist (may still indicate healthy server)
-- `401 Unauthorized` / `407 Proxy Authentication Required` - Authentication required
+- `404 Not Found` - User or resource doesn't exist (may still indicate
+  healthy server)
+- `401 Unauthorized` / `407 Proxy Authentication Required` - Authentication
+  required
 
 ## Metrics
 
@@ -146,7 +149,8 @@ Different SIP servers may respond with different status codes to OPTIONS request
     - source (the SIP server address)
     - method (the SIP method used, lowercase: options, invite, message)
     - transport (the transport protocol: udp, tcp, ws, wss)
-    - status_code (the SIP response status code, e.g., "200", "404"; not always present, e.g. on timeout)
+    - status_code (the SIP response status code, e.g., "200", "404"; not
+      always present, e.g. on timeout)
   - fields:
     - response_time_s (float, seconds) - Time taken to receive response
       (for timeouts, this equals the configured timeout value)
