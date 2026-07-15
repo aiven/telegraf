@@ -1,0 +1,47 @@
+name: Aiven PR checks
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  target-branch:
+    name: Target branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the PR targets a v*-aiven branch
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          if [[ "$BASE_REF" != v*-aiven ]]; then
+            echo "::error::PRs must target a vX.Y.Z-aiven branch, not '$BASE_REF'. See AIVEN_MAINTENANCE.md."
+            exit 1
+          fi
+          echo "Target branch '$BASE_REF' is OK."
+
+  no-merge-commits:
+    name: No merge commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Check that the PR branch has no merge commits
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          merges=$(git rev-list --merges "origin/$BASE_REF..HEAD")
+          if [ -n "$merges" ]; then
+            echo "::error::The PR branch contains merge commits. Update it by rebasing onto '$BASE_REF', not by merging."
+            git log --oneline --merges "origin/$BASE_REF..HEAD"
+            exit 1
+          fi
+          echo "No merge commits on top of '$BASE_REF'."
