@@ -35,14 +35,12 @@
 * predates the upstream postgresql plugin and was subsequently moved to the
   aiven prefix
 
-### Prometheus Client
-
-* added incompatible metric name replacements ( not sure exactely why it was
-  needed, but its now our api and we have to keep it )
-
 ## Serializers
 
 ### Prometheus and Prometheus Remote Write
 
-* changes to make `Plugins.Prometheus Client` work for the same reasons as
-  stated there
+* colons in metric and label names are always replaced with underscores,
+  regardless of `prometheus_name_sanitization` mode ( legacy or utf8 );
+  this is now our api and we have to keep it. Upstream's legacy mode
+  already does this natively, so the patch only needs to cover the utf8
+  mode ( see `plugins/serializers/prometheus/convert.go` )
