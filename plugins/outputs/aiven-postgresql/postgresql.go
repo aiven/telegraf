@@ -148,7 +148,7 @@ func (p *Postgresql) generateCreateTable(metric telegraf.Metric) string {
 				tag_columns = append(tag_columns, "tags")
 				tag_columndefs = append(tag_columndefs, "tags jsonb")
 			} else {
-				for column, _ := range metric.Tags() {
+				for column := range metric.Tags() {
 					tag_columns = append(tag_columns, quoteIdent(column))
 					tag_columndefs = append(tag_columndefs, fmt.Sprintf("%s text", quoteIdent(column)))
 				}
@@ -160,7 +160,7 @@ func (p *Postgresql) generateCreateTable(metric telegraf.Metric) string {
 			if p.TagsAsJsonb {
 				columns = append(columns, "tags jsonb")
 			} else {
-				for column, _ := range metric.Tags() {
+				for column := range metric.Tags() {
 					pk = append(pk, quoteIdent(column))
 					columns = append(columns, fmt.Sprintf("%s text", quoteIdent(column)))
 				}
@@ -346,7 +346,7 @@ func (p *Postgresql) Write(metrics []telegraf.Metric) error {
 		}
 		table_and_cols = fmt.Sprintf("%s(%s)", p.fullTableName(tablename), strings.Join(quoted_columns, ","))
 		batches[table_and_cols] = append(batches[table_and_cols], values...)
-		for i, _ := range columns {
+		for i := range columns {
 			i += len(params[table_and_cols]) * len(columns)
 			placeholder = append(placeholder, fmt.Sprintf("$%d", i+1))
 		}

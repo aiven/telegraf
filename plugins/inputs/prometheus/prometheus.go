@@ -18,6 +18,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/influxdata/telegraf"
@@ -311,6 +312,27 @@ func (p *Prometheus) Gather(acc telegraf.Accumulator) error {
 func (p *Prometheus) Stop() {
 	p.cancel()
 	p.wg.Wait()
+
+	if p.MonitorPods && !p.isNodeScrapeScope {
+		var factoryToShutdown informers.SharedInformerFactory
+		informerfactoryMu.Lock()
+		if informerfactoryRefs != nil {
+			informerfactoryRefs[p.PodNamespace]--
+			if informerfactoryRefs[p.PodNamespace] <= 0 {
+				factoryToShutdown = informerfactory[p.PodNamespace]
+				delete(informerfactory, p.PodNamespace)
+				delete(informerfactoryRefs, p.PodNamespace)
+			}
+		}
+		informerfactoryMu.Unlock()
+		// Shutdown outside the lock because it blocks until all informer
+		// goroutines terminate. Holding the mutex during that wait would
+		// serialise all plugin Start/Stop operations behind a potentially
+		// slow network teardown.
+		if factoryToShutdown != nil {
+			factoryToShutdown.Shutdown()
+		}
+	}
 
 	if p.client != nil {
 		p.client.CloseIdleConnections()
