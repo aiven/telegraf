@@ -19,11 +19,11 @@ plugin ordering. See [CONFIGURATION.md][CONFIGURATION.md] for more details.
 
 [CONFIGURATION.md]: ../../../docs/CONFIGURATION.md#plugins
 
-## Secret-store support
+## Secret store support
 
-This plugin supports secrets from secret-stores for the `username` and
+This plugin supports secrets from secret stores for the `username` and
 `password` option.
-See the [secret-store documentation][SECRETSTORE] for more details on how
+See the [secret store documentation][SECRETSTORE] for more details on how
 to use them.
 
 [SECRETSTORE]: ../../../docs/CONFIGURATION.md#secret-store-secrets
@@ -151,6 +151,8 @@ requests:
     - transport (the transport protocol: udp, tcp, ws, wss)
     - status_code (the SIP response status code, e.g., "200", "404"; not
       always present, e.g. on timeout)
+    - status_code (the SIP response status code, e.g., "200", "404"; not always
+      present, e.g. on timeout)
   - fields:
     - response_time_s (float, seconds) - Time taken to receive response
       (for timeouts, this equals the configured timeout value)

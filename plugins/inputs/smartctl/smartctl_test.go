@@ -72,7 +72,8 @@ func TestCasesScan(t *testing.T) {
 }
 
 func fakeScanExecCommand(command string, args ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestScanHelperProcess", "--", command}
+	cs := make([]string, 0, len(args)+3)
+	cs = append(cs, "-test.run=TestScanHelperProcess", "--", command)
 	cs = append(cs, args...)
 	cmd := exec.Command(os.Args[0], cs...)
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
@@ -92,6 +93,9 @@ func TestScanHelperProcess(*testing.T) {
 		os.Exit(42)
 	}
 
+	// Emit a warning to stderr to ensure it does not corrupt the JSON parsed
+	// from stdout (see issue #19165)
+	fmt.Fprintln(os.Stderr, "/dev/sda: warning emitted to stderr")
 	fmt.Fprint(os.Stdout, string(scanBytes))
 	//nolint:revive // os.Exit called intentionally
 	os.Exit(0)
@@ -162,7 +166,8 @@ func TestCasesDevices(t *testing.T) {
 }
 
 func fakeDeviceExecCommand(command string, args ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestDeviceHelperProcess", "--", command}
+	cs := make([]string, 0, len(args)+3)
+	cs = append(cs, "-test.run=TestDeviceHelperProcess", "--", command)
 	cs = append(cs, args...)
 	cmd := exec.Command(os.Args[0], cs...)
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
@@ -193,6 +198,9 @@ func TestDeviceHelperProcess(t *testing.T) {
 
 	scanBytes, err := os.ReadFile(filename)
 	require.NoError(t, err)
+	// Emit a warning to stderr to ensure it does not corrupt the JSON parsed
+	// from stdout (see issue #19165)
+	fmt.Fprintln(os.Stderr, "/dev/sda: warning emitted to stderr")
 	fmt.Fprint(os.Stdout, string(scanBytes))
 	os.Exit(0) //nolint:revive // os.Exit called intentionally
 }

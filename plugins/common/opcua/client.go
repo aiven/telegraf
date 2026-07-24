@@ -53,6 +53,7 @@ type OpcUAClientConfig struct {
 	OptionalFields []string         `toml:"optional_fields"`
 	Workarounds    OpcUAWorkarounds `toml:"workarounds"`
 	SessionTimeout config.Duration  `toml:"session_timeout"`
+	Locales        []string         `toml:"locales"`
 }
 
 func (o *OpcUAClientConfig) Validate() error {
@@ -191,6 +192,9 @@ type OpcUAClient struct {
 
 	opts  []opcua.Option
 	codes []ua.StatusCode
+
+	// Internal flags
+	DisableAutoReconnect bool
 }
 
 // determineOrCreateCertificates handles certificate determination and generation logic
@@ -270,7 +274,11 @@ func (o *OpcUAClient) SetupOptions() error {
 		}
 	}
 
-	if o.Config.SecurityPolicy != "None" || o.Config.SecurityMode != "None" {
+	// A client certificate is only needed when the channel is actually secured.
+	// Setting either security_policy or security_mode to "None" collapses the
+	// channel to None, so skip certificate creation (which may fail on a
+	// read-only filesystem) unless both request security.
+	if o.Config.SecurityPolicy != "None" && o.Config.SecurityMode != "None" {
 		if err := o.determineOrCreateCertificates(); err != nil {
 			return err
 		}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/config"
+	"github.com/influxdata/telegraf/metric"
 	"github.com/influxdata/telegraf/testutil"
 )
 
@@ -24,13 +25,13 @@ func TestDellApis(t *testing.T) {
 
 		switch r.URL.Path {
 		case "/redfish/v1/Chassis/System.Embedded.1/Thermal":
-			http.ServeFile(w, r, "testdata/dell_thermal.json")
+			http.ServeFile(w, r, "testdata/dell/dell_thermal.json")
 		case "/redfish/v1/Chassis/System.Embedded.1/Power":
-			http.ServeFile(w, r, "testdata/dell_power.json")
+			http.ServeFile(w, r, "testdata/dell/dell_power.json")
 		case "/redfish/v1/Chassis/System.Embedded.1":
-			http.ServeFile(w, r, "testdata/dell_chassis.json")
+			http.ServeFile(w, r, "testdata/dell/dell_chassis.json")
 		case "/redfish/v1/Systems/System.Embedded.1":
-			http.ServeFile(w, r, "testdata/dell_systems.json")
+			http.ServeFile(w, r, "testdata/dell/dell_systems.json")
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -44,7 +45,7 @@ func TestDellApis(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedMetrics := []telegraf.Metric{
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_temperatures",
 			map[string]string{
 				"name":      "CPU1 Temp",
@@ -63,7 +64,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -80,7 +81,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -97,7 +98,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -114,7 +115,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -131,7 +132,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -148,7 +149,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -165,7 +166,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -182,7 +183,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -199,7 +200,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -216,7 +217,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -233,7 +234,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -250,7 +251,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -267,7 +268,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -284,7 +285,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -301,7 +302,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -318,7 +319,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -335,7 +336,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_powercontrol",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -356,7 +357,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_powersupplies",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -374,7 +375,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_voltages",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -389,7 +390,7 @@ func TestDellApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_voltages",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -405,7 +406,7 @@ func TestDellApis(t *testing.T) {
 			time.Unix(0, 0),
 		),
 
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_voltages",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -447,13 +448,13 @@ func TestHPApis(t *testing.T) {
 
 		switch r.URL.Path {
 		case "/redfish/v1/Chassis/1/Thermal":
-			http.ServeFile(w, r, "testdata/hp_thermal.json")
+			http.ServeFile(w, r, "testdata/hp/hp_thermal.json")
 		case "/redfish/v1/Chassis/1/Power":
-			http.ServeFile(w, r, "testdata/hp_power.json")
+			http.ServeFile(w, r, "testdata/hp/hp_power.json")
 		case "/redfish/v1/Systems/1":
-			http.ServeFile(w, r, "testdata/hp_systems.json")
+			http.ServeFile(w, r, "testdata/hp/hp_systems.json")
 		case "/redfish/v1/Chassis/1/":
-			http.ServeFile(w, r, "testdata/hp_chassis.json")
+			http.ServeFile(w, r, "testdata/hp/hp_chassis.json")
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -467,7 +468,7 @@ func TestHPApis(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedMetricsHp := []telegraf.Metric{
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_temperatures",
 			map[string]string{
 				"name":      "01-Inlet Ambient",
@@ -484,7 +485,7 @@ func TestHPApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_temperatures",
 			map[string]string{
 				"name":      "44-P/S 2 Zone",
@@ -501,7 +502,7 @@ func TestHPApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -516,7 +517,7 @@ func TestHPApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -531,7 +532,7 @@ func TestHPApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -546,7 +547,7 @@ func TestHPApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_powercontrol",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -564,7 +565,7 @@ func TestHPApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_powersupplies",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -581,7 +582,7 @@ func TestHPApis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_powersupplies",
 			map[string]string{
 				"source":    "tpa-hostname",
@@ -626,13 +627,13 @@ func TestHPilo4Apis(t *testing.T) {
 
 		switch r.URL.Path {
 		case "/redfish/v1/Chassis/1/Thermal":
-			http.ServeFile(w, r, "testdata/hp_thermal_ilo4.json")
+			http.ServeFile(w, r, "testdata/hp/hp_thermal_ilo4.json")
 		case "/redfish/v1/Chassis/1/Power":
-			http.ServeFile(w, r, "testdata/hp_power.json")
+			http.ServeFile(w, r, "testdata/hp/hp_power.json")
 		case "/redfish/v1/Systems/1":
-			http.ServeFile(w, r, "testdata/hp_systems.json")
+			http.ServeFile(w, r, "testdata/hp/hp_systems.json")
 		case "/redfish/v1/Chassis/1/":
-			http.ServeFile(w, r, "testdata/hp_chassis.json")
+			http.ServeFile(w, r, "testdata/hp/hp_chassis.json")
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -646,7 +647,7 @@ func TestHPilo4Apis(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedMetricsHp := []telegraf.Metric{
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_temperatures",
 			map[string]string{
 				"name":      "01-Inlet Ambient",
@@ -663,7 +664,7 @@ func TestHPilo4Apis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_temperatures",
 			map[string]string{
 				"name":      "44-P/S 2 Zone",
@@ -680,7 +681,7 @@ func TestHPilo4Apis(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"address":   address,
@@ -731,7 +732,7 @@ func TestInvalidUsernameorPassword(t *testing.T) {
 
 		switch r.URL.Path {
 		case "/redfish/v1/Chassis/System.Embedded.1/Thermal":
-			http.ServeFile(w, r, "testdata/dell_thermal.json")
+			http.ServeFile(w, r, "testdata/dell/dell_thermal.json")
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -762,7 +763,7 @@ func TestNoUsernameorPasswordConfiguration(t *testing.T) {
 
 		switch r.URL.Path {
 		case "/redfish/v1/Chassis/System.Embedded.1/Thermal":
-			http.ServeFile(w, r, "testdata/dell_thermal.json")
+			http.ServeFile(w, r, "testdata/dell/dell_thermal.json")
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -790,31 +791,31 @@ func TestInvalidDellJSON(t *testing.T) {
 	}{
 		{
 			name:             "check Thermal",
-			thermalfilename:  "testdata/dell_thermalinvalid.json",
-			powerfilename:    "testdata/dell_power.json",
-			chassisfilename:  "testdata/dell_chassis.json",
-			hostnamefilename: "testdata/dell_systems.json",
+			thermalfilename:  "testdata/dell/dell_thermalinvalid.json",
+			powerfilename:    "testdata/dell/dell_power.json",
+			chassisfilename:  "testdata/dell/dell_chassis.json",
+			hostnamefilename: "testdata/dell/dell_systems.json",
 		},
 		{
 			name:             "check Power",
-			thermalfilename:  "testdata/dell_thermal.json",
-			powerfilename:    "testdata/dell_powerinvalid.json",
-			chassisfilename:  "testdata/dell_chassis.json",
-			hostnamefilename: "testdata/dell_systems.json",
+			thermalfilename:  "testdata/dell/dell_thermal.json",
+			powerfilename:    "testdata/dell/dell_powerinvalid.json",
+			chassisfilename:  "testdata/dell/dell_chassis.json",
+			hostnamefilename: "testdata/dell/dell_systems.json",
 		},
 		{
 			name:             "check Location",
-			thermalfilename:  "testdata/dell_thermal.json",
-			powerfilename:    "testdata/dell_power.json",
-			chassisfilename:  "testdata/dell_chassisinvalid.json",
-			hostnamefilename: "testdata/dell_systems.json",
+			thermalfilename:  "testdata/dell/dell_thermal.json",
+			powerfilename:    "testdata/dell/dell_power.json",
+			chassisfilename:  "testdata/dell/dell_chassisinvalid.json",
+			hostnamefilename: "testdata/dell/dell_systems.json",
 		},
 		{
 			name:             "check Hostname",
-			thermalfilename:  "testdata/dell_thermal.json",
-			powerfilename:    "testdata/dell_power.json",
-			chassisfilename:  "testdata/dell_chassis.json",
-			hostnamefilename: "testdata/dell_systemsinvalid.json",
+			thermalfilename:  "testdata/dell/dell_thermal.json",
+			powerfilename:    "testdata/dell/dell_power.json",
+			chassisfilename:  "testdata/dell/dell_chassis.json",
+			hostnamefilename: "testdata/dell/dell_systemsinvalid.json",
 		},
 	}
 	for _, tt := range tests {
@@ -868,24 +869,24 @@ func TestInvalidHPJSON(t *testing.T) {
 	}{
 		{
 			name:             "check Thermal",
-			thermalfilename:  "testdata/hp_thermalinvalid.json",
-			powerfilename:    "testdata/hp_power.json",
-			hostnamefilename: "testdata/hp_systems.json",
-			chassisfilename:  "testdata/hp_chassis.json",
+			thermalfilename:  "testdata/hp/hp_thermalinvalid.json",
+			powerfilename:    "testdata/hp/hp_power.json",
+			hostnamefilename: "testdata/hp/hp_systems.json",
+			chassisfilename:  "testdata/hp/hp_chassis.json",
 		},
 		{
 			name:             "check Power",
-			thermalfilename:  "testdata/hp_thermal.json",
-			powerfilename:    "testdata/hp_powerinvalid.json",
-			hostnamefilename: "testdata/hp_systems.json",
-			chassisfilename:  "testdata/hp_chassis.json",
+			thermalfilename:  "testdata/hp/hp_thermal.json",
+			powerfilename:    "testdata/hp/hp_powerinvalid.json",
+			hostnamefilename: "testdata/hp/hp_systems.json",
+			chassisfilename:  "testdata/hp/hp_chassis.json",
 		},
 		{
 			name:             "check Hostname",
-			thermalfilename:  "testdata/hp_thermal.json",
-			powerfilename:    "testdata/hp_power.json",
-			hostnamefilename: "testdata/hp_systemsinvalid.json",
-			chassisfilename:  "testdata/hp_chassis.json",
+			thermalfilename:  "testdata/hp/hp_thermal.json",
+			powerfilename:    "testdata/hp/hp_power.json",
+			hostnamefilename: "testdata/hp/hp_systemsinvalid.json",
+			chassisfilename:  "testdata/hp/hp_chassis.json",
 		},
 	}
 	for _, tt := range tests {
@@ -938,13 +939,13 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 
 		switch r.URL.Path {
 		case "/redfish/v1/Chassis/1/Thermal":
-			http.ServeFile(w, r, "testdata/hp_thermal.json")
+			http.ServeFile(w, r, "testdata/hp/hp_thermal.json")
 		case "/redfish/v1/Chassis/1/Power":
-			http.ServeFile(w, r, "testdata/hp_power.json")
+			http.ServeFile(w, r, "testdata/hp/hp_power.json")
 		case "/redfish/v1/Systems/1":
-			http.ServeFile(w, r, "testdata/hp_systems.json")
+			http.ServeFile(w, r, "testdata/hp/hp_systems.json")
 		case "/redfish/v1/Chassis/1/":
-			http.ServeFile(w, r, "testdata/hp_chassis.json")
+			http.ServeFile(w, r, "testdata/hp/hp_chassis.json")
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -958,7 +959,7 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedMetricsHp := []telegraf.Metric{
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_temperatures",
 			map[string]string{
 				"name":                 "01-Inlet Ambient",
@@ -988,7 +989,7 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_temperatures",
 			map[string]string{
 				"name":                 "44-P/S 2 Zone",
@@ -1018,7 +1019,7 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":               "tpa-hostname",
@@ -1046,7 +1047,7 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":               "tpa-hostname",
@@ -1074,7 +1075,7 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_thermal_fans",
 			map[string]string{
 				"source":               "tpa-hostname",
@@ -1102,7 +1103,7 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_powercontrol",
 			map[string]string{
 				"source":               "tpa-hostname",
@@ -1133,7 +1134,7 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_powersupplies",
 			map[string]string{
 				"source":               "tpa-hostname",
@@ -1163,7 +1164,7 @@ func TestIncludeTagSetsConfiguration(t *testing.T) {
 			},
 			time.Unix(0, 0),
 		),
-		testutil.MustMetric(
+		metric.New(
 			"redfish_power_powersupplies",
 			map[string]string{
 				"source":               "tpa-hostname",
