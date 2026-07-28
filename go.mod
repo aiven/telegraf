@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/bigquery v1.77.0
 	cloud.google.com/go/monitoring v1.29.0
 	cloud.google.com/go/pubsub/v2 v2.6.0
-	cloud.google.com/go/storage v1.62.3
+	cloud.google.com/go/storage v1.64.0
 	collectd.org v0.6.0
 	github.com/99designs/keyring v1.2.2
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.2
@@ -248,9 +248,9 @@ require (
 	golang.org/x/tools v0.46.0
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20211230205640-daad0b7ba671
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/api v0.286.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa
-	google.golang.org/grpc v1.81.1
+	google.golang.org/api v0.287.1
+	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7
+	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/gorethink/gorethink.v3 v3.0.5
 	gopkg.in/olivere/elastic.v5 v5.0.86
@@ -268,7 +268,7 @@ require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	cloud.google.com/go/iam v1.7.0 // indirect
+	cloud.google.com/go/iam v1.11.0 // indirect
 	code.cloudfoundry.org/clock v1.2.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
@@ -291,9 +291,9 @@ require (
 	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.7.2 // indirect
 	github.com/ClickHouse/ch-go v0.71.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.31.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.55.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.55.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.57.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.57.0 // indirect
 	github.com/IBM/go-sdk-core/v5 v5.21.2 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
@@ -417,8 +417,8 @@ require (
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.16 // indirect
-	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.17 // indirect
+	github.com/googleapis/gax-go/v2 v2.23.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
 	github.com/grid-x/serial v0.0.0-20211107191517-583c7356b3aa // indirect
@@ -588,8 +588,8 @@ require (
 	go.opentelemetry.io/collector/internal/testutil v0.154.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.140.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.128.0 // indirect
-	go.opentelemetry.io/contrib/detectors/gcp v1.42.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
+	go.opentelemetry.io/contrib/detectors/gcp v1.43.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.68.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
@@ -603,8 +603,8 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20211209221555-9c9e7e272434 // indirect
-	google.golang.org/genproto v0.0.0-20260319201613-d00831a3d3e7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260610212136-7ab31c22f7ad // indirect
+	google.golang.org/genproto v0.0.0-20260519071638-aa98bba5eb94 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/fatih/pool.v2 v2.0.0 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
