@@ -1,0 +1,86 @@
+name: Aiven build and test
+
+on:
+  pull_request:
+    branches: ['v*-aiven']
+  push:
+    branches: ['v*-aiven']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET_BRANCH: ${{ github.base_ref || github.ref_name }}
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Find Go files and packages changed on top of upstream
+        run: |
+          upstream="${TARGET_BRANCH%-aiven}-upstream"
+          if ! git rev-parse --verify --quiet "refs/remotes/origin/$upstream" >/dev/null; then
+            echo "::error::Cannot find origin/$upstream, the upstream branch for '$TARGET_BRANCH'."
+            exit 1
+          fi
+          git diff --name-only --diff-filter=d "origin/$upstream...HEAD" -- '*.go' \
+            > "$RUNNER_TEMP/go-files"
+          {
+            echo ./plugins
+            awk '!/(^|\/)testdata\//' "$RUNNER_TEMP/go-files" \
+              | xargs -r -n1 dirname | sed 's|^|./|'
+          } | sort -u > "$RUNNER_TEMP/go-packages"
+          echo "Go files changed relative to $upstream:"
+          cat "$RUNNER_TEMP/go-files"
+          echo "Packages to vet and test:"
+          cat "$RUNNER_TEMP/go-packages"
+      - name: Check formatting of changed Go files
+        run: |
+          unformatted=$(xargs -r gofmt -s -l < "$RUNNER_TEMP/go-files")
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files are not formatted with 'gofmt -s':"
+            echo "$unformatted"
+            exit 1
+          fi
+      - name: Build
+        run: go build ./cmd/telegraf
+      - name: Vet
+        run: xargs go vet < "$RUNNER_TEMP/go-packages"
+      - name: Test
+        run: xargs go test -short < "$RUNNER_TEMP/go-packages"
+
+  clean-merges:
+    name: Clean merge commits
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check that merge commits carry no changes of their own
+        run: |
+          upstream="${TARGET_BRANCH%-aiven}-upstream"
+          if ! git rev-parse --verify --quiet "refs/remotes/origin/$upstream" >/dev/null; then
+            echo "::error::Cannot find origin/$upstream, the upstream branch for '$TARGET_BRANCH'."
+            exit 1
+          fi
+          status=0
+          for m in $(git rev-list --merges "origin/$upstream..HEAD"); do
+            if ! git diff --quiet "$m^2" "$m"; then
+              echo "::error::Merge $m carries extra changes. Inspect with: git show --remerge-diff $m"
+              status=1
+            fi
+          done
+          exit "$status"

@@ -896,6 +896,42 @@ func TestCollectionUTF8NameSanitization(t *testing.T) {
 	require.Equal(t, expected, c.GetProto())
 }
 
+func TestCollectionUTF8NameSanitizationStripsColons(t *testing.T) {
+	// Colons must always be replaced with underscores, even in utf8 mode,
+	// per Aiven's Prometheus Client compatibility requirement.
+	c := NewCollection(FormatConfig{NameSanitization: "utf8"})
+	c.Add(
+		metric.New(
+			"cpu:usage",
+			map[string]string{"host:name": "example.org"},
+			map[string]interface{}{"time:idle": 42.0},
+			time.Unix(0, 0),
+		),
+		time.Unix(0, 0),
+	)
+
+	expected := []*dto.MetricFamily{
+		{
+			Name: new("cpu_usage_time_idle"),
+			Help: new(helpString),
+			Type: dto.MetricType_UNTYPED.Enum(),
+			Metric: []*dto.Metric{
+				{
+					Label: []*dto.LabelPair{
+						{
+							Name:  new("host_name"),
+							Value: new("example.org"),
+						},
+					},
+					Untyped: &dto.Untyped{Value: new(42.0)},
+				},
+			},
+		},
+	}
+
+	require.Equal(t, expected, c.GetProto())
+}
+
 func TestCollectionUTF8FallbackForInvalidUTF8(t *testing.T) {
 	c := NewCollection(FormatConfig{NameSanitization: "utf8"})
 	c.Add(

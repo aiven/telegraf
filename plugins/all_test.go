@@ -21,7 +21,9 @@ import (
 // This ensures package names are not tied with plugin names.
 // it should be of the form <pkg-name>: <plugin-name>
 var exceptionMap = map[string]string{
-	"github.com/influxdata/telegraf/plugins/processors/aws/ec2": "aws_ec2",
+	"github.com/influxdata/telegraf/plugins/processors/aws/ec2":       "aws_ec2",
+	"github.com/influxdata/telegraf/plugins/inputs/aiven-procstat":    "aiven_procstat",
+	"github.com/influxdata/telegraf/plugins/outputs/aiven-postgresql": "aiven_postgresql",
 }
 
 func Test_AllPlugins(t *testing.T) {

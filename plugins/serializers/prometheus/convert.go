@@ -18,7 +18,6 @@ type table struct {
 var metricNameTable = table{
 	first: &unicode.RangeTable{
 		R16: []unicode.Range16{
-			{0x003A, 0x003A, 1}, // :
 			{0x0041, 0x005A, 1}, // A-Z
 			{0x005F, 0x005F, 1}, // _
 			{0x0061, 0x007A, 1}, // a-z
@@ -27,7 +26,7 @@ var metricNameTable = table{
 	},
 	rest: &unicode.RangeTable{
 		R16: []unicode.Range16{
-			{0x0030, 0x003A, 1}, // 0-:
+			{0x0030, 0x0039, 1}, // 0-9
 			{0x0041, 0x005A, 1}, // A-Z
 			{0x005F, 0x005F, 1}, // _
 			{0x0061, 0x007A, 1}, // a-z
@@ -84,9 +83,9 @@ func sanitize(name string, table table) (string, bool) {
 }
 
 // SanitizeMetricName checks if the name is a valid Prometheus metric name.
-// If not, it attempts to replace invalid runes with an underscore to create a valid name.
+// If not, it attempts to replace invalid runes with an underscore to create a valid name. // Note: Colons are always replaced with underscores (Aiven requirement).
 func SanitizeMetricName(name string) (string, bool) {
-	if model.LegacyValidation.IsValidMetricName(name) {
+	if model.LegacyValidation.IsValidMetricName(name) && !strings.Contains(name, ":") {
 		return name, true
 	}
 	return sanitize(name, metricNameTable)
@@ -94,8 +93,9 @@ func SanitizeMetricName(name string) (string, bool) {
 
 // SanitizeLabelName checks if the name is a valid Prometheus label name.
 // If not, it attempts to replace invalid runes with an underscore to create a valid name.
+// Note: Colons are always replaced with underscores (Aiven requirement).
 func SanitizeLabelName(name string) (string, bool) {
-	if model.LegacyValidation.IsValidLabelName(name) {
+	if model.LegacyValidation.IsValidLabelName(name) && !strings.Contains(name, ":") {
 		return name, true
 	}
 	return sanitize(name, labelNameTable)
@@ -104,8 +104,9 @@ func SanitizeLabelName(name string) (string, bool) {
 // sanitizeMetricNameUTF8 checks if the name is a valid Prometheus metric name
 // using UTF-8 validation. If the name is invalid (including non-UTF-8 input),
 // it falls back to legacy ASCII sanitization.
+// Note: Colons are always replaced with underscores (Aiven requirement).
 func sanitizeMetricNameUTF8(name string) (string, bool) {
-	if model.UTF8Validation.IsValidMetricName(name) {
+	if model.UTF8Validation.IsValidMetricName(name) && !strings.Contains(name, ":") {
 		return name, true
 	}
 	return sanitize(name, metricNameTable)
@@ -114,8 +115,9 @@ func sanitizeMetricNameUTF8(name string) (string, bool) {
 // sanitizeLabelNameUTF8 checks if the name is a valid Prometheus label name
 // using UTF-8 validation. If the name is invalid (including non-UTF-8 input),
 // it falls back to legacy ASCII sanitization.
+// Note: Colons are always replaced with underscores (Aiven requirement).
 func sanitizeLabelNameUTF8(name string) (string, bool) {
-	if model.UTF8Validation.IsValidLabelName(name) {
+	if model.UTF8Validation.IsValidLabelName(name) && !strings.Contains(name, ":") {
 		return name, true
 	}
 	return sanitize(name, labelNameTable)

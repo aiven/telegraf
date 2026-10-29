@@ -1,12 +1,11 @@
 package elasticsearch
 
 import (
+	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 
 	"github.com/influxdata/telegraf/testutil"
 )
@@ -272,6 +271,47 @@ func TestGatherClusterStatsNonMaster(t *testing.T) {
 	checkNodeStatsResult(t, &acc)
 }
 
+func TestGatherCCRStatsMaster(t *testing.T) {
+	// This needs multiple steps to replicate the multiple calls internally.
+	es := newElasticsearchWithClient()
+	es.CCRStats = true
+	es.Servers = []string{"http://example.com:9200"}
+	es.serverInfo = make(map[string]serverInfo)
+	info := serverInfo{nodeID: "SDFsfSDFsdfFSDSDfSFDSDF", masterID: ""}
+
+	// first get catMaster
+	es.client.Transport = newTransportMock(IsMasterResult)
+	masterID, err := es.getCatMaster("junk")
+	require.NoError(t, err)
+	info.masterID = masterID
+	es.serverInfo["http://example.com:9200"] = info
+
+	isMasterResultTokens := strings.Split(IsMasterResult, " ")
+	require.Equal(t, masterID, isMasterResultTokens[0], "catmaster is incorrect")
+
+	// now get node status, which determines whether we're master
+	var acc testutil.Accumulator
+	es.Local = true
+	es.client.Transport = newTransportMock(nodeStatsResponse)
+	require.NoError(t, es.gatherNodeStats("junk", &acc))
+	require.True(t, es.serverInfo[es.Servers[0]].isMaster(), "IsMaster set incorrectly")
+	checkNodeStatsResult(t, &acc)
+
+	tags := map[string]string{}
+
+	// now test the ccr leader method
+	es.client.Transport = newTransportMock(ccrLeaderResponse)
+	require.NoError(t, es.gatherCCRLeaderStats("junk", &acc))
+
+	acc.AssertContainsTaggedFields(t, "elasticsearch_ccr_stats_leader", ccrLeaderStatsExpected, tags)
+
+	// now test the ccr follower method
+	es.client.Transport = newTransportMock(ccrFollowerResponse)
+	require.NoError(t, es.gatherCCRFollowerStats("junk", &acc))
+
+	acc.AssertContainsTaggedFields(t, "elasticsearch_ccr_stats_follower", ccrFollowerStatsExpected, tags)
+}
+
 func TestGatherClusterIndicesStats(t *testing.T) {
 	es := newElasticsearchWithClient()
 	es.IndicesInclude = []string{"_all"}
@@ -364,6 +404,44 @@ func TestGatherClusterIndiceShardsStats(t *testing.T) {
 	acc.AssertContainsTaggedFields(t, "elasticsearch_indices_stats_shards",
 		clusterIndicesReplicaShardsExpected,
 		replicaTags)
+}
+
+func TestGatherRemoteStoreStats(t *testing.T) {
+	es := newElasticsearchWithClient()
+	es.RemoteStoreStats = true
+	es.Servers = []string{"http://example.com:9200"}
+	es.IndicesInclude = []string{"remote-index"}
+	es.client.Transport = newTransportMock(remoteStoreResponse)
+	var acc testutil.Accumulator
+	url := "http://example.com:9200/_remotestore/stats/remote-index"
+	err := es.gatherRemoteStoreStats(url, "remote-index", &acc)
+	require.NoError(t, err)
+
+	globalTags := map[string]string{"index_name": "remote-index"}
+	expectedGlobalFields := map[string]interface{}{
+		"total":      float64(4),
+		"successful": float64(4),
+		"failed":     float64(0),
+	}
+	acc.AssertContainsTaggedFields(t, "elasticsearch_remotestore_global", expectedGlobalFields, globalTags)
+
+	primaryTags := map[string]string{
+		"index_name":    "remote-index",
+		"shard_id":      "0",
+		"routing_state": "STARTED",
+		"shard_type":    "primary",
+		"node_id":       "q1VxWZnCTICrfRc2bRW3nw",
+	}
+	acc.AssertContainsTaggedFields(t, "elasticsearch_remotestore_stats_shards", remoteStoreIndicesPrimaryShardsExpected, primaryTags)
+
+	replicaTags := map[string]string{
+		"index_name":    "remote-index",
+		"shard_id":      "1",
+		"routing_state": "STARTED",
+		"shard_type":    "replica",
+		"node_id":       "q1VxWZnCTICrfRc2bRW3nw",
+	}
+	acc.AssertContainsTaggedFields(t, "elasticsearch_remotestore_stats_shards", remoteStoreIndicesReplicaShardsExpected, replicaTags)
 }
 
 func newElasticsearchWithClient() *Elasticsearch {
