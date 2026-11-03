@@ -97,7 +97,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/go-stomp/stomp v2.1.4+incompatible
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.1.0
 	github.com/gofrs/uuid/v5 v5.4.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
