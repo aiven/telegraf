@@ -115,7 +115,7 @@ require (
 	github.com/gorcon/rcon v1.4.0
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
-	github.com/gosnmp/gosnmp v1.43.2
+	github.com/gosnmp/gosnmp v1.47.0
 	github.com/grid-x/modbus v0.0.0-20240503115206-582f2ab60a18
 	github.com/gwos/tcg/sdk v0.0.0-20240830123415-f8a34bba6358
 	github.com/hashicorp/consul/api v1.34.3
@@ -202,7 +202,7 @@ require (
 	github.com/snowflakedb/gosnowflake v1.19.1
 	github.com/srebhan/cborquery v1.0.4
 	github.com/srebhan/protobufquery v1.0.4
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
 	github.com/tbrandon/mbserver v0.0.0-20170611213546-993e1772cc62
 	github.com/tdrn-org/go-hue v1.2.0
 	github.com/tdrn-org/go-nsdp v0.5.1
@@ -235,7 +235,7 @@ require (
 	go.opentelemetry.io/proto/otlp/profiles/v1development v0.3.0
 	go.starlark.net v0.0.0-20260326113308-fadfc96def35
 	go.step.sm/crypto v0.83.0
-	go.yaml.in/yaml/v3 v3.0.4
+	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/crypto v0.53.0
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/mod v0.37.0
